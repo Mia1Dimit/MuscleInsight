@@ -48,7 +48,7 @@ def process_signal(signal, segment_size, overlap):
     mfs, mnfs = [], []
     for start in range(0, len(signal) - segment_size + 1, step):
         segment = signal[start:start + segment_size]
-        freqs, psd = welch(segment, fs=1000)  # Assuming a sampling rate of 1000 Hz
+        freqs, psd = welch(segment, fs=800)
         mf = calculate_median_frequency(psd, freqs)
         mnf = calculate_mean_frequency(psd, freqs)
         mfs.append(mf)
