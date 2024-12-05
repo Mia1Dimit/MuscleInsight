@@ -95,7 +95,7 @@ if __name__ == "__main__":
 
     # Ask if the user wants to save the plot
     if ask_save_plot():
-        folder_path = r"C:\Dimitris\MuscleInsight\Plots\rms_plots"
+        folder_path = r"C:\Dimitris\MuscleInsight\Plots\plots_rms"
         filename = generate_filename(file_details, "RMS", window_size, overlap, folder_path)
         plt.savefig(filename, bbox_inches='tight')  # Save the figure correctly
         print(f"Plot saved at {filename}")
