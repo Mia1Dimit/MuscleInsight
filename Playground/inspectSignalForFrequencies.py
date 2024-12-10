@@ -1,4 +1,3 @@
-import mylib as m
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.widgets import SpanSelector, Button, TextBox
@@ -9,7 +8,13 @@ import pandas as pd
 from scipy.signal import butter, lfilter, freqz
 import sounddevice as sd
 from scipy.fft import fft, fftfreq
+import tkinter as tk
+from tkinter import filedialog
 import json
+from scipy.signal import welch, hilbert
+from scipy.stats import entropy
+from pywt import wavedec
+from math import log2
 
 
 INITIAL_RATE = 800.0
@@ -23,7 +28,7 @@ order = 2  # Order of the bandpass filter
 
 fft_window_size = 1024*1  
 fft_step_size = fft_window_size//2 
-metrics_window_sec = 2.0  # Length of the metrics window in seconds
+metrics_window_sec = 1.5  # Length of the metrics window in seconds
 
 target_sound_sampling_rate = 44100  # 44.1 kHz
 
@@ -40,22 +45,19 @@ def analyze_vibration_signal(signal, timestamps, sampling_freq, metrics_window_s
     
     # Initialize arrays for metrics
     metrics = {
-        "Mean": [],
-        "Minimum": [],
-        # 'RMS': [],               
-        # 'Peak': [],             
-        # 'Crest': [],     
-        'avgTimeline': [],       
-        'KurtosisAvg': [],
-        'Kurtosis': []         
-        # 'Shape_Factor': [],     
-        # 'Impulse_Factor': [],   
-        # 'Clearance_Factor': [], 
-        # 'Entropy': [],          
-        # 'Zero_Crossings': [],   
-        # 'Peak_to_Peak': [],     
-        # 'Variance': [],         
-        # 'Skewness': []          
+        'RMS': [],           
+        'Zero_Crossings': [],
+        "MeanFreq": [],
+        "AvgRectifiedValue": [],
+        "MNF/ARV": [],
+        "MeanPowerFreq": [],
+        "MedianFreq": [],
+        "SpectralMomentsRatio": [],
+        "InstantaneousMeanFreq": [],
+        "InstantaneousMediumFreqBand": [],
+        'LempelZivComplexity': [],  
+        'WaveletEntropy': [],  
+        'BandSpectralEntropy': []
     }
     
     scaling_factors = {}  # Store scaling information
@@ -69,25 +71,73 @@ def analyze_vibration_signal(signal, timestamps, sampling_freq, metrics_window_s
         window = signal[start_idx:end_idx]
         timestamps_windows.append(timestamps[start_idx])
         
-        # Calculate metrics
-        rms = np.sqrt(np.mean(np.square(window)))
-        abs_mean = np.mean(np.abs(window))
-        peak = np.max(np.abs(window))
-        
-        metrics['Mean'].append(abs_mean)
-        metrics['Minimum'].append(np.min(window))
-        # metrics['RMS'].append(rms)
-        # metrics['Peak'].append(peak)
-        # metrics['Crest'].append(peak/rms if rms != 0 else 0)
-        metrics['Kurtosis'].append(stats.kurtosis(window))
-        # metrics['Shape_Factor'].append(rms/abs_mean if abs_mean != 0 else 0)
-        # metrics['Impulse_Factor'].append(peak/abs_mean if abs_mean != 0 else 0)
-        # metrics['Clearance_Factor'].append(peak/np.mean(np.sqrt(np.abs(window))))
-        # metrics['Entropy'].append(stats.entropy(np.abs(pd.Series(window).value_counts(normalize=True))))
-        # metrics['Zero_Crossings'].append(np.sum(np.diff(np.signbit(window).astype(int)))/len(window))
-        # metrics['Peak_to_Peak'].append(np.max(window) - np.min(window))
-        # metrics['Variance'].append(np.var(window))
-        # metrics['Skewness'].append(stats.skew(window))
+        # RMS
+        metrics['RMS'].append(np.sqrt(np.mean(window**2)))
+
+        # Zero Crossings
+        metrics['Zero_Crossings'].append(np.sum(np.diff(np.signbit(window))))
+
+        # Avg Rectified Value (ARV)
+        arv = np.mean(np.abs(window))
+        metrics['AvgRectifiedValue'].append(arv)
+
+        # FFT and Welch's PSD for frequency domain metrics
+        freqs, psd = welch(window, fs=INITIAL_RATE)
+
+        # Mean Frequency
+        meanfreq = np.sum(freqs * psd) / np.sum(psd)
+        metrics['MeanFreq'].append(meanfreq)
+
+        # Mean Power Frequency
+        metrics['MeanPowerFreq'].append(np.sum(psd) / len(psd))
+
+        # Median Frequency
+        cumulative_sum = np.cumsum(psd)
+        half_power = cumulative_sum[-1] / 2
+        metrics['MedianFreq'].append(freqs[np.where(cumulative_sum >= half_power)[0][0]])
+
+        # Spectral Moments Ratio
+        moments = [(freqs**i) @ psd for i in range(1, 4)]
+        metrics['SpectralMomentsRatio'].append(moments[1] / moments[0] if moments[0] != 0 else 0)
+
+        # Instantaneous Mean Frequency
+        analytic_window = hilbert(window)
+        instantaneous_phase = np.unwrap(np.angle(analytic_window))
+        instantaneous_freq = np.diff(instantaneous_phase) / (2.0 * np.pi / INITIAL_RATE)
+        metrics['InstantaneousMeanFreq'].append(np.mean(instantaneous_freq))
+
+        # Instantaneous Medium Frequency Band
+        metrics['InstantaneousMediumFreqBand'].append(np.median(instantaneous_freq))
+
+        # Lempel-Ziv Complexity
+        binary_signal = ''.join(['1' if x > 0 else '0' for x in window])
+        def lempel_ziv_complexity(s):
+            n = len(s)
+            i, l, c = 1, 1, 1
+            while i + l <= n:
+                if s[i:i+l] not in s[0:i]:
+                    c += 1
+                    i += l
+                    l = 1
+                else:
+                    l += 1
+            return c / log2(n) if n > 0 else 0
+        metrics['LempelZivComplexity'].append(lempel_ziv_complexity(binary_signal))
+
+        # Wavelet Entropy
+        coeffs = wavedec(window, 'db1', level=4)
+        energy = np.array([np.sum(c**2) for c in coeffs])
+        total_energy = np.sum(energy)
+        normalized_energy = energy / total_energy if total_energy > 0 else energy
+        metrics['WaveletEntropy'].append(entropy(normalized_energy, base=2))
+
+        # Band Spectral Entropy
+        psd_norm = psd / np.sum(psd) if np.sum(psd) > 0 else psd
+        metrics['BandSpectralEntropy'].append(entropy(psd_norm, base=2))
+
+        # MNF/ARV ratio
+        metrics['MNF/ARV'].append(meanfreq / arv if arv != 0 else 0)
+
     
     # Normalize all metrics to [0, 1] range and store scaling factors
     normalized_metrics = {}
@@ -106,17 +156,6 @@ def analyze_vibration_signal(signal, timestamps, sampling_freq, metrics_window_s
             else:
                 normalized_metrics[metric] = np.zeros_like(metric_values)
 
-    temp = 0
-    for count, value in enumerate(metrics['Kurtosis']):
-        temp += value
-        if count % 10 == 0:
-            metrics['KurtosisAvg'].append(temp)
-            metrics['avgTimeline'].append(timestamps_windows[count])
-            temp = 0
-            
-    plt.figure() 
-    plt.plot(metrics['avgTimeline'], metrics['KurtosisAvg'])
-    plt.show()
 
     return np.array(timestamps_windows), normalized_metrics, scaling_factors
 
@@ -152,7 +191,7 @@ def plot_interactive_metrics(timestamps, metrics, scaling_factors, metrics_windo
         visible = not origline.get_visible()
         origline.set_visible(visible)
         # Change alpha of legend item
-        legline.set_alpha(1.0 if visible else 0.2)
+        legline.set_alpha(2.0 if visible else 0.2)
         fig.canvas.draw()
     
     # Connect the pick event
@@ -284,6 +323,14 @@ def compute_magnitude(arr):
     magnitude = np.sqrt(arr[0]**2 + arr[1]**2 + arr[2]**2)
     return magnitude
 
+def mean_frequency(signal, sampling_rate):
+    # Compute Power Spectral Density (PSD)
+    freqs, psd = welch(signal, fs=sampling_rate)
+    
+    # Calculate the Mean Frequency
+    mean_freq = np.sum(freqs * psd) / np.sum(psd)
+    return mean_freq
+
 def upsample_signal(input_signal, target_sampling_rate, Fs):
     num_samples = int(len(input_signal) * target_sampling_rate / Fs)
     upsampled_signal = resample(input_signal, num_samples)
@@ -307,6 +354,25 @@ def play_sound(event):
     sd.play(signal, target_sound_sampling_rate)
     # sd.wait()  # Wait until the sound has finished playing
 
+def get_fft_values(signal):
+    """
+    Computes the FFT of a given signal window and returns the values from 0 Hz to fs/2.
+
+    Args:
+        signal (np.ndarray): The input signal window.
+        fs (float): The sampling frequency of the signal.
+
+    Returns:
+        np.ndarray: The FFT values from 0 Hz to fs/2.
+    """
+    n = len(signal)
+    fft_values = np.fft.fft(signal)
+
+    # Take only the positive frequencies
+    positive_fft_values = (2.0 / n) * np.abs(fft_values[:n//2])
+
+    return positive_fft_values
+
 def progressive_fft_plot(signal):
     # Setup frequencies for the FFT (only positive frequencies)
     frequencies = fftfreq(fft_window_size, 1 / Fs)[:fft_window_size // 2]
@@ -329,7 +395,7 @@ def progressive_fft_plot(signal):
     # Plot setup for the FFT in the second subplot
     line, = ax_fft.plot(frequencies, np.zeros_like(frequencies))
     ax_fft.set_xlim(-100, 100 + Fs / 2)
-    ax_fft.set_ylim(0, 40)
+    ax_fft.set_ylim(0, 30)
     ax_fft.set_xlabel("Frequency (Hz)")
     ax_fft.set_ylabel("Magnitude")
     ax_fft.set_title("Progressive FFT across Signal")
@@ -343,7 +409,7 @@ def progressive_fft_plot(signal):
         windowed_signal = signal[idx:idx + fft_window_size]
 
         # Perform FFT and get magnitude (assuming m.get_fft_values exists)
-        fft_magnitudes = m.get_fft_values(windowed_signal)
+        fft_magnitudes = get_fft_values(windowed_signal)
 
         # Update the FFT plot
         line.set_ydata(fft_magnitudes)
@@ -377,19 +443,32 @@ def live_FFT(event):
 
     progressive_fft_plot(input_signal[start_fft:end_idx])
 
+def open_dialog_and_select_multiple_files():
+    """
+    Opens a file dialog allowing the user to select multiple files.
 
+    Returns:
+        list: A list of file paths selected by the user.
+    """
+    root = tk.Tk()
+    root.withdraw()  # Hide the root window
+
+    file_paths = filedialog.askopenfilenames(title="Select Files")
+
+    # Convert to a list and return
+    return list(file_paths)
 
 
 #########################################################
 
 
-filepaths = m.open_dialog_and_select_multiple_files()
+filepaths = open_dialog_and_select_multiple_files()
 data, fs_list = [], []
 
 for filepath in filepaths:
     with open(filepath, "r") as json_file:
         newdata = json.load(json_file)
-        data.extend(newdata["amplitudes"])
+        data.extend(newdata["signal"])
 
 Fs = INITIAL_RATE
 data_formation = np.array(data)
