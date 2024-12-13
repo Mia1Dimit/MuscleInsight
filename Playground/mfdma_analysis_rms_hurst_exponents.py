@@ -140,36 +140,45 @@ if __name__ == "__main__":
 
         # Core analysis
         results = mfdma_core(preprocessed_signal, segment_size_values, q_values)
-        print(f"Results for {path}:", results)
+        print(f"\nResults for {path}:")
+
+        for window_size in segment_size_values:
+            rms_values = results[window_size]  # This is the F_q for the given window size
+            print(f"- Window size {window_size}: {', '.join([f'{value:.4f}' for value in rms_values])}")
 
         # Calculate h(q) using the results from the MF-DMA analysis
         hurst_exponents = calculate_hurst_exponents(results, segment_size_values, q_values)
-        print(f"Hurst Exponents for {path}:", hurst_exponents)
+        print(f"\nHurst Exponents for {path}:")
+        for i, he in enumerate(hurst_exponents):
+            print(f"- {q_values[i]}: {hurst_exponents[q_values[i]]}")
 
         # Calculate taf(q)
         tau_q = calculate_multifractal_mass_exponent_taf(q_values, hurst_exponents)
-        print(f"Multifractal Mass Exponent tau(q) for {path}:", tau_q)
+        print(f"\nMultifractal Mass Exponent tau(q) for {path}:")
+        print(", ".join([f"{value:.4f}" for value in tau_q]))
 
         # Calculate a(q)
         a_q = calculate_singularity_strength_a(q_values, tau_q)
-        print(f"Singularity Strength a(q) for {path}:", a_q)
+        print(f"\nSingularity Strength a(q) for {path}:")
+        print(", ".join([f"{value:.4f}" for value in a_q]))
 
         # Calculate multifractal spectrum f(a)
         fa_q = calculate_multifractal_spectrum_fa(q_values, a_q, tau_q)
-        print(f"Multifractal Spectrum f(a) for {path}:", fa_q)
+        print(f"\nMultifractal Spectrum f(a) for {path}:")
+        print(", ".join([f"{value:.4f}" for value in fa_q]))
 
         # Calculate SOM
         som = calculate_som(a_q)
-        print(f"Strength of Multifractality (SOM) for {path}: {som}")
+        print(f"\nStrength of Multifractality (SOM) for {path}: {som:.4f}")
 
         # Calculate DOM
         dom = calculate_dom(hurst_exponents)
-        print(f"Degree of Multifractality (DOM) for {path}: {dom}")
+        print(f"\nDegree of Multifractality (DOM) for {path}: {dom:.4f}")
 
         # Calculate DFS
         dfs = calculate_dfs(fa_q)
-        print(f"Difference of Multifractal Spectrum (DFS) for {path}: {dfs}")
+        print(f"\nDifference of Multifractal Spectrum (DFS) for {path}: {dfs:.4f}")
 
         # Calculate PSE
         pse = calculate_pse(a_q, q_values)
-        print(f"Peak Singularity Exponent (PSE) for {path}: {pse}")
+        print(f"\nPeak Singularity Exponent (PSE) for {path}: {pse}")
