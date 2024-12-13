@@ -376,30 +376,11 @@ def get_fft_values(signal):
 def progressive_fft_plot(signal):
     # Setup frequencies for the FFT (only positive frequencies)
     frequencies = fftfreq(fft_window_size, 1 / Fs)[:fft_window_size // 2]
+    index_25 = min(range(len(frequencies)), key=lambda i: abs(frequencies[i] - 25))
+    index_80 = min(range(len(frequencies)), key=lambda i: abs(frequencies[i] - 80))
+    index_350 = min(range(len(frequencies)), key=lambda i: abs(frequencies[i] - 350))
 
-    # Initialize the plot with two subplots: one for the signal and one for the FFT
-    plt.ion()  # Turn on interactive mode for live updating
-    fig, (ax_signal, ax_fft) = plt.subplots(2, 1, figsize=(10, 8))
-
-    # Plot the entire signal in the first subplot
-    ax_signal.plot(signal, color="black")
-    ax_signal.set_xlim(0, len(signal))
-    ax_signal.set_ylim(np.min(signal), np.max(signal))
-    ax_signal.set_title("Signal with Moving Window Indicator")
-    ax_signal.set_xlabel("Sample Index")
-    ax_signal.set_ylabel("Amplitude")
-    
-    # Create a vertical line to indicate the current window position
-    idx_line = ax_signal.axvline(x=0, color="blue", linewidth=2)
-
-    # Plot setup for the FFT in the second subplot
-    line, = ax_fft.plot(frequencies, np.zeros_like(frequencies))
-    ax_fft.set_xlim(-100, 100 + Fs / 2)
-    ax_fft.set_ylim(0, 30)
-    ax_fft.set_xlabel("Frequency (Hz)")
-    ax_fft.set_ylabel("Magnitude")
-    ax_fft.set_title("Progressive FFT across Signal")
-    
+    imas = []
     
     # Progressively plot the FFT of each window
     idx = 0
@@ -411,27 +392,13 @@ def progressive_fft_plot(signal):
 
         # Perform FFT and get magnitude (assuming m.get_fft_values exists)
         fft_magnitudes = get_fft_values(windowed_signal)
-
-        # Update the FFT plot
-        line.set_ydata(fft_magnitudes)
-
-        # Update the position of the moving line on the signal plot
-        idx_line.set_xdata(idx + fft_window_size)
-
-        # Draw updated plots
-        plt.draw()
-        # plt.pause(0.0005)  # Pause to create the "live" effect
+        
+        # Update imas
+        imas.append(np.mean(fft_magnitudes[index_25:index_80]) - np.mean(fft_magnitudes[index_80:index_350]))
 
         # Increment the index by step_size
         idx += fft_step_size
-
-        # Check for user input to stop the loop
-        if plt.waitforbuttonpress(timeout=0.1):  # Wait for key press
-            running = False  # Stop the loop if any key is pressed
-
-    plt.ioff()  # Turn off interactive mode
-    plt.show(block=False)
-    plt.close(fig)
+    return imas
 
 def live_FFT(event):
     if start_idx == end_idx:
@@ -442,7 +409,14 @@ def live_FFT(event):
     else:
         start_fft = start_idx-fft_window_size
 
-    progressive_fft_plot(input_signal[start_fft:end_idx])
+    imas = progressive_fft_plot(input_signal[start_fft:end_idx])
+    
+    plt.figure()
+    plt.plot(imas)
+    plt.title(f"{filepaths[0].split('/')[-1].split('_ID')[0]}")
+    plt.show()
+
+    
 
 def open_dialog_and_select_multiple_files():
     """
