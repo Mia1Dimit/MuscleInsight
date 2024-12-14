@@ -416,8 +416,6 @@ def live_FFT(event):
     plt.title(f"{filepaths[0].split('/')[-1].split('_ID')[0]}")
     plt.show()
 
-    
-
 def open_dialog_and_select_multiple_files():
     """
     Opens a file dialog allowing the user to select multiple files.
