@@ -41,6 +41,7 @@ def mfdma_core(time_series, window_sizes, q_values):
         overlap = window_size // 2
 
         moving_avg = centered_moving_average(time_series, window_size)
+        #print("Len of time series:",len(time_series),"\nlen of moving_avg:",len(moving_avg))
 
         half_window = window_size // 2
         detrended = time_series[half_window:-half_window + 1] - moving_avg
