@@ -399,7 +399,8 @@ def progressive_fft_plot(signal):
     ax_fft.set_xlabel("Frequency (Hz)")
     ax_fft.set_ylabel("Magnitude")
     ax_fft.set_title("Progressive FFT across Signal")
-
+    
+    
     # Progressively plot the FFT of each window
     idx = 0
     running = True  # Control flag for stopping early
@@ -497,7 +498,7 @@ end_idx = None
 # Create the main figure
 fig, ax = plt.subplots(figsize=(13, 7))
 ax.plot(time, input_signal)
-ax.set_title('Original Signal')
+ax.set_title(f"{filepaths[0].split('/')[-1]}")
 ax.set_xlabel('Time [s]')
 ax.set_ylabel('Amplitude')
 

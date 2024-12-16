@@ -5,6 +5,7 @@ from matplotlib import pyplot as plt
 import json
 import itertools
 import os
+from matplotlib.lines import Line2D
 
 
 def select_files():
@@ -36,6 +37,20 @@ def calculate_rms(signal, window_size, overlap):
 def ask_save_plot():
     """Asks the user if they want to save the plot as a PNG file."""
     return messagebox.askyesno("Save Plot", "Do you want to save the plot as a PNG file?")
+
+
+def on_pick(event):
+    legend_line = event.artist
+    is_dimmed = legend_line.get_alpha() == 0.2  # Check if the legend line is dimmed
+    new_alpha = 1.0 if is_dimmed else 0.2  # Toggle between dimmed and fully visible
+    legend_line.set_alpha(new_alpha)  # Set the alpha for the legend line
+    
+    # Toggle the visibility of the corresponding plot line
+    for line in plt.gca().get_lines():
+        if line.get_label() == legend_line.get_label():
+            line.set_visible(is_dimmed)  # Show if it was dimmed, hide if it was visible
+    
+    plt.gcf().canvas.draw_idle()  # Redraw the canvas
 
 
 def generate_filename(file_details, metric, window_size, overlap, folder_path):
@@ -84,24 +99,31 @@ if __name__ == "__main__":
         
         # Plot the RMS values
         x = np.arange(len(rms_values))  # Index for RMS values
-        plt.plot(x, rms_values, label=f"{data['class']} (ID: {data['ID']})", color=next(colors))
+        plt.plot(x, rms_values, label=f"{data['person']} {data['ID']} {data['class']}", color=next(colors))
     
     # Add labels and legend
     plt.xlabel('Segment Index')
     plt.ylabel('RMS Value')
     plt.title('RMS Calculation')
-    plt.legend()
+    legend = plt.legend()
     plt.grid(True)
 
     # Ask if the user wants to save the plot
-    if ask_save_plot():
-        folder_path = r"C:\Dimitris\MuscleInsight\Plots\plots_rms"
-        filename = generate_filename(file_details, "RMS", window_size, overlap, folder_path)
-        plt.savefig(filename, bbox_inches='tight')  # Save the figure correctly
-        print(f"Plot saved at {filename}")
-    else:
-        print("Plot not saved.")
+    # if ask_save_plot():
+    #     folder_path = r"C:\Dimitris\MuscleInsight\Plots\plots_rms"
+    #     filename = generate_filename(file_details, "RMS", window_size, overlap, folder_path)
+    #     plt.savefig(filename, bbox_inches='tight')  # Save the figure correctly
+    #     print(f"Plot saved at {filename}")
+    # else:
+    #     print("Plot not saved.")
     
+    for legend_line, original_line in zip(legend.get_lines(), plt.gca().get_lines()):
+        legend_line.set_picker(True)  # Enable picking on legend lines
+        legend_line.set_pickradius(5)  # Set a pick radius for easier clicking
+
+   
+    plt.gcf().canvas.mpl_connect("pick_event", on_pick)
+
     # Show the plot after saving
     plt.show()
 
