@@ -2,7 +2,7 @@
 
 ## Tasks
 
-### 1. Koubia Document
+### 1. Koubias Document
 - [ ] Completed document draft
 - [ ] Anamoni John's review
 
