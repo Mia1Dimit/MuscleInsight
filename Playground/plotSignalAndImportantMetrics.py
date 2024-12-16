@@ -21,8 +21,8 @@ import pywt
 
 INITIAL_RATE = 800.0
 
-fft_window_size = 1024//2  
-fft_step_size = fft_window_size//2 
+fft_window_size = 1024*2
+fft_step_size = fft_window_size//2
 
 #############################
 
@@ -53,7 +53,8 @@ def main():
 
     plot_signal(input_signal, time, filepaths, Fs)
     plot_IMA_diff(input_signal, Fs, filepaths)
-    plot_emd_optimized(input_signal, Fs, fft_window_size, fft_step_size)
+    plot_emd([1,1,0], input_signal, Fs, fft_window_size, fft_step_size)
+    # plot_emd_optimized(input_signal, Fs, fft_window_size, fft_step_size)
 
     plt.show()
 
@@ -86,7 +87,7 @@ def plot_IMA_diff(input_signal, Fs, filepaths):
     print("Done.")
 
 def plot_emd_optimized(signal, sampling_rate, window_size, step_size):
-    print("Plotting EMDs..   ", end='')
+    print("Plotting opt EMDs..   ")
     
     # Use NumPy for segmentation
     segments = segment_signal_numpy(signal, window_size, step_size)
@@ -105,7 +106,7 @@ def plot_emd_optimized(signal, sampling_rate, window_size, step_size):
         calculate_median_frequency_vectorized(segment, sampling_rate / 2) 
         for segment in segments_d1
     ])
-    print("wavedec complete, ",end='')
+    print("wavedec complete, ")
 
     # 2. Empirical Mode Decomposition (EMD) - Parallel Processing
     emd = EMD()
@@ -115,24 +116,71 @@ def plot_emd_optimized(signal, sampling_rate, window_size, step_size):
         calculate_median_frequency_vectorized(segment, sampling_rate) 
         for segment in segments_emd
     ])
-    print("EMD complete, ",end='')
+    print("EMD complete, ")
 
     # 3. Ensemble Empirical Mode Decomposition (EEMD) - Parallel Processing
-    eemd = EEMD()
-    imfs_eemd = eemd(signal)
-    segments_eemd = segment_signal_numpy(imfs_eemd[0], window_size, step_size)
-    mfs_eemd = np.array([
-        calculate_median_frequency_vectorized(segment, sampling_rate) 
-        for segment in segments_eemd
-    ])
-    print("EEMD complete, ",end='')
+    # eemd = EEMD()
+    # imfs_eemd = eemd(signal)
+    # segments_eemd = segment_signal_numpy(imfs_eemd[0], window_size, step_size)
+    # mfs_eemd = np.array([
+    #     calculate_median_frequency_vectorized(segment, sampling_rate) 
+    #     for segment in segments_eemd
+    # ])
+    # print("EEMD complete. ")
 
     # Plotting
     plt.figure(figsize=(12, 8))
     plt.plot(mfs_raw, label="Raw Signal", marker='o')
     plt.plot(mfs_dwt, label="DWT (D1 Component)", marker='x')
     plt.plot(mfs_emd, label="EMD (IMF1)", marker='s')
-    plt.plot(mfs_eemd, label="EEMD (IMF1)", marker='d')
+    # plt.plot(mfs_eemd, label="EEMD (IMF1)", marker='d')
+    plt.xlabel("Segment Index")
+    plt.ylabel("Median Frequency (Hz)")
+    plt.title("Median Frequency Over Time Using OPT Different Preprocessing Methods")
+    plt.legend()
+    plt.grid()
+    
+    print("Done.")
+
+def plot_emd(choice, signal, sampling_rate, window_size, step_size):
+    print("Plotting EMDs..   ")
+    
+    segments = segment_signal(signal, window_size, step_size)
+
+    # Median Frequency calculation for raw signal
+    mfs_raw = [calculate_median_frequency(segment, sampling_rate) for segment in segments]
+    plt.figure(figsize=(12, 8))
+
+    # Preprocessing Methods
+    # 1. Discrete Wavelet Transform (DWT)
+    if choice[0]:
+        coeffs = pywt.wavedec(signal, 'db4', level=5)
+        d1_component = coeffs[0]  # Highest frequency component
+        segments_d1 = segment_signal(d1_component, window_size // 2, step_size // 2)
+        mfs_dwt = [calculate_median_frequency(segment, sampling_rate / 2) for segment in segments_d1]
+        print("wavedec complete, ")
+        plt.plot(mfs_dwt, label="DWT (D1 Component)", marker='x')
+
+    # 2. Empirical Mode Decomposition (EMD)
+    if choice[1]:
+        emd = EMD()
+        imfs_emd = emd(signal)
+        segments_emd = segment_signal(imfs_emd[0], window_size, step_size)
+        mfs_emd = [calculate_median_frequency(segment, sampling_rate) for segment in segments_emd]
+        print("emd complete, ")
+        plt.plot(mfs_emd, label="EMD (IMF1)", marker='s')
+
+    # 3. Ensemble Empirical Mode Decomposition (EEMD)
+    if choice[2]:
+        eemd = EEMD()
+        imfs_eemd = eemd(signal)
+        segments_eemd = segment_signal(imfs_eemd[0], window_size, step_size)
+        mfs_eemd = [calculate_median_frequency(segment, sampling_rate) for segment in segments_eemd]
+        print("eemd complete.")
+        plt.plot(mfs_eemd, label="EEMD (IMF1)", marker='d')
+
+    # Plotting
+    plt.plot(mfs_raw, label="Raw Signal", marker='o')
     plt.xlabel("Segment Index")
     plt.ylabel("Median Frequency (Hz)")
     plt.title("Median Frequency Over Time Using Different Preprocessing Methods")
@@ -141,6 +189,19 @@ def plot_emd_optimized(signal, sampling_rate, window_size, step_size):
     
     print("Done.")
 
+
+def calculate_median_frequency(signal, fs):
+    freqs, psd = welch(signal, fs=fs, nperseg=1024)
+    cumulative_energy = np.cumsum(psd)
+    total_energy = cumulative_energy[-1]
+    mf = freqs[np.searchsorted(cumulative_energy, total_energy / 2)]
+    return mf
+
+def segment_signal(signal, window_size, step_size):
+    segments = []
+    for start in range(0, len(signal) - window_size + 1, step_size):
+        segments.append(signal[start:start + window_size])
+    return np.array(segments)
 
 def segment_signal_numpy(signal, window_size, step_size):
     # More efficient signal segmentation using NumPy
@@ -288,7 +349,7 @@ def plot_interactive_metrics(timestamps, metrics, scaling_factors, metrics_windo
     """
     Plot all normalized metrics with interactive legend and scaling information
     """
-    fig, ax = plt.subplots(figsize=(15, 8))
+    fig, ax = plt.subplots(figsize=(8, 5))
     
     lines = []
     labels = []
