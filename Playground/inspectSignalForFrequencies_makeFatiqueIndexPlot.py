@@ -1,38 +1,75 @@
+"""
+Opens a dialog for selecting multiple json files which contain the signal data.
+Merges the signal data from all the selected files and plots it.
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.widgets import SpanSelector, Button, TextBox
-from scipy import stats
-from time import sleep
-from scipy.signal import resample
-import pandas as pd
-from scipy.signal import butter, lfilter, freqz
-import sounddevice as sd
 from scipy.fft import fft, fftfreq
 import tkinter as tk
 from tkinter import filedialog
 import json
 from scipy.signal import welch, hilbert
 from scipy.stats import entropy
-from pywt import wavedec
 from math import log2
 
 
+#############################
+# Configuration
+
 INITIAL_RATE = 800.0
 
-USE_FILTER = False  # Set to True to apply a bandpass filter
-USE_BANDPASS_FILTER = False
-lowcut = 1.0  # Low frequency of the bandpass filter
-highcut = 20.0  # High frequency of the bandpass filter
-order = 2  # Order of the bandpass filter
-
-
-fft_window_size = 1024*1  
+fft_window_size = 1024//2  
 fft_step_size = fft_window_size//2 
-metrics_window_sec = 1.5  # Length of the metrics window in seconds
 
-target_sound_sampling_rate = 44100  # 44.1 kHz
+#############################
 
 
+def main():
+
+    filepaths = open_dialog_and_select_multiple_files()
+    data = []
+
+    for filepath in filepaths:
+        with open(filepath, "r") as json_file:
+            newdata = json.load(json_file)
+            data.extend(newdata["signal"])
+
+    Fs              = INITIAL_RATE
+    input_signal    = np.array(data)
+    num_samples     = len(input_signal)
+    time            = np.arange(num_samples) / Fs  # Time array for plotting
+
+    # Plot the upsampled signal
+    print('Plotting..')
+
+
+    plot_signal(input_signal, time, filepaths, Fs)
+    plot_IMA_diff(input_signal, Fs, filepaths)
+
+    plt.show()
+
+
+#########################################################
+
+
+def plot_signal(input_signal, time, filepaths, Fs):
+    # Create the main figure
+    fig = plt.figure(figsize=(6, 4))
+    plt.plot(time, input_signal)
+    plt.title(f"Signal: {filepaths[0].split('/')[-1].split('_ID')[0]}")
+    plt.xlabel('Time [s]')
+    plt.ylabel('Amplitude')
+
+def plot_IMA_diff(input_signal, Fs, filepaths):
+
+    imas, imas_time = calc_progressive_fft(input_signal, Fs)
+    
+    plt.figure(figsize=(6, 4))
+    plt.plot(imas_time, imas)
+    plt.xlabel("Time (s)")
+    plt.title(f"IMA Low-High Component Difference ({filepaths[0].split('/')[-1].split('_ID')[0]})")
+    # plt.show()
 
 def analyze_vibration_signal(signal, timestamps, sampling_freq, metrics_window_sec):
     """
@@ -205,124 +242,6 @@ def plot_interactive_metrics(timestamps, metrics, scaling_factors, metrics_windo
 
     plt.show()
 
-def get_sampling_rate_acc_fromSD(timestamps_sd):
-    """Specific func to get sampling rate from acc data stored in SD card. Needs specific timestamps from SD."""
-
-    if len(timestamps_sd) < 2:
-        return 0  # Not enough timestamps to calculate sampling rate
-
-    # Calculate the time difference between the first two timestamps
-    time_diffs = [ (timestamps_sd[i+1] - timestamps_sd[i]).total_seconds() for i in range(len(timestamps_sd) - 1)]
-    avg_time_diff = sum(time_diffs)/len(time_diffs)
-    # avg_time_diff = (timestamps_sd[1] - timestamps_sd[0]).total_seconds()
-
-    # Each chunk corresponds to 57600 / 6 samples
-    num_samples_per_chunk = 57600 / 6
-    sampling_rate = num_samples_per_chunk / avg_time_diff
-    print(f"Sampling Rate: {sampling_rate}")
-
-    return sampling_rate
-
-def onselect(xmin, xmax):
-    # Function to update the selected region indices
-    print(f"Selected time range: {xmin} to {xmax}\nDuration: {xmax - xmin}")
-    global start_idx, end_idx
-    start_idx = int(xmin * len(input_signal) / time[-1])
-    end_idx = int(xmax * len(input_signal) / time[-1])
-
-def plot_selected_interval(event):
-    # Function to plot the selected interval
-
-    if start_idx is not None and end_idx is not None:
-        # fig2, ax2 = plt.subplots()
-        # ax2.plot(time[start_idx:end_idx], input_signal[start_idx:end_idx], color='turquoise')
-        # ax2.set_title('Selected Interval')
-        # ax2.set_xlabel('Time [s]')
-        # ax2.set_ylabel('Amplitude')
-
-        # fft = m.get_fft_values(input_signal[start_idx:end_idx])
-        # bins = m.get_fft_bins(input_signal[start_idx:end_idx], Fs)
-        # fig3, ax3 = plt.subplots()
-        # ax3.plot(bins, fft, color='red')
-        # ax3.set_title('Selected Interval')
-        # ax3.set_xlabel('Freq [Hz]')
-        # ax3.set_ylabel('Amplitude')
-
-
-        window_timestamps, metrics, scaling_factors = analyze_vibration_signal(input_signal[start_idx:end_idx], time[start_idx:end_idx], Fs, metrics_window_sec)
-        plot_interactive_metrics(window_timestamps, metrics, scaling_factors, metrics_window_sec)
-
-
-        plt.show()
-
-def lowpass_filter(data, highcut, Fs, order=5):
-    """
-    Applies a low-pass Butterworth filter to the input signal and plots the transfer function.
-    
-    Parameters:
-    - data: array-like, the signal data to filter
-    - highcut: float, the cutoff frequency of the filter (in Hz)
-    - Fs: float, the sampling frequency of the signal (in Hz)
-    - order: int, the order of the Butterworth filter (default is 5)
-
-    Returns:
-    - y: array-like, the filtered signal
-    """
-    # Define the normalized cutoff frequency
-    nyquist = 0.5 * Fs
-    normal_cutoff = highcut / nyquist
-    
-    # Design the Butterworth low-pass filter
-    b, a = butter(order, normal_cutoff, btype='low', analog=False)
-    
-    # Apply the filter to the data
-    y = lfilter(b, a, data)
-    
-    # Plot the transfer function
-    w, h = freqz(b, a, worN=8000)
-    plt.plot((Fs * 0.5 / np.pi) * w, abs(h), 'b')
-    plt.plot(highcut, 0.5 * np.sqrt(2), 'ko')
-    plt.axvline(highcut, color='k')
-    plt.xlim(0, 0.5 * Fs)
-    plt.title("Low-pass Filter Frequency Response")
-    plt.xlabel('Frequency (Hz)')
-    plt.ylabel('Gain')
-    plt.grid()
-    # plt.show()
-    
-    return y
-
-def bandpass_filter(data, lowcut, highcut, fs, order=2):
-    nyquist = 0.5 * fs  # Nyquist frequency
-    low = lowcut / nyquist
-    high = highcut / nyquist
-    b, a = butter(order, [low, high], btype='band')
-    y = lfilter(b, a, data)
-
-    # Get the transfer function
-    w, h = bandpass_transfer_function(lowcut, highcut, fs, order)
-    # Plot the transfer function (magnitude response)
-    plt.plot(0.5 * Fs * w / np.pi, np.abs(h), 'b')
-    plt.title("Bandpass Filter Transfer Function")
-    plt.xlabel("Frequency (Hz)")
-    plt.ylabel("Gain")
-    plt.grid()
-
-    return y
-
-def bandpass_transfer_function(lowcut, highcut, fs, order=2):
-    nyquist = 0.5 * fs
-    low = lowcut / nyquist
-    high = highcut / nyquist
-    b, a = butter(order, [low, high], btype='band')
-    w, h = freqz(b, a, worN=8000)
-    return w, h
-
-def compute_magnitude(arr):
-    # Calculate the magnitude along axis 0
-    magnitude = np.sqrt(arr[0]**2 + arr[1]**2 + arr[2]**2)
-    return magnitude
-
 def mean_frequency(signal, sampling_rate):
     # Compute Power Spectral Density (PSD)
     freqs, psd = welch(signal, fs=sampling_rate)
@@ -330,29 +249,6 @@ def mean_frequency(signal, sampling_rate):
     # Calculate the Mean Frequency
     mean_freq = np.sum(freqs * psd) / np.sum(psd)
     return mean_freq
-
-def upsample_signal(input_signal, target_sampling_rate, Fs):
-    num_samples = int(len(input_signal) * target_sampling_rate / Fs)
-    upsampled_signal = resample(input_signal, num_samples)
-
-    # Normalize the signal to the range -1.0 to 1.0 (for maximum volume)
-    upsampled_signal = np.array(upsampled_signal)
-    upsampled_signal = upsampled_signal / np.max(np.abs(upsampled_signal))
-
-    # Plot the upsampled signal
-    time = np.arange(num_samples) / target_sampling_rate  # Time array for plotting
-
-    return upsampled_signal, time
-
-def play_sound(event):
-    sd.stop()
-    if start_idx == end_idx:
-        return
-    signal, timestamps = upsample_signal(input_signal[start_idx:end_idx], target_sound_sampling_rate, Fs)
-
-    # Play the signal
-    sd.play(signal, target_sound_sampling_rate)
-    # sd.wait()  # Wait until the sound has finished playing
 
 def get_fft_values(signal):
     """
@@ -373,7 +269,7 @@ def get_fft_values(signal):
 
     return positive_fft_values
 
-def progressive_fft_plot(signal):
+def calc_progressive_fft(signal, Fs):
     # Setup frequencies for the FFT (only positive frequencies)
     frequencies = fftfreq(fft_window_size, 1 / Fs)[:fft_window_size // 2]
     index_25 = min(range(len(frequencies)), key=lambda i: abs(frequencies[i] - 25))
@@ -381,6 +277,7 @@ def progressive_fft_plot(signal):
     index_350 = min(range(len(frequencies)), key=lambda i: abs(frequencies[i] - 350))
 
     imas = []
+    imas_time = []
     
     # Progressively plot the FFT of each window
     idx = 0
@@ -395,26 +292,14 @@ def progressive_fft_plot(signal):
         
         # Update imas
         imas.append(np.mean(fft_magnitudes[index_25:index_80]) - np.mean(fft_magnitudes[index_80:index_350]))
+        imas_time.append(idx + fft_window_size/2)
 
         # Increment the index by step_size
         idx += fft_step_size
-    return imas
 
-def live_FFT(event):
-    if start_idx == end_idx:
-        return
-    
-    if start_idx-fft_window_size < 0:
-        start_fft = 0
-    else:
-        start_fft = start_idx-fft_window_size
+    return imas, imas_time
 
-    imas = progressive_fft_plot(input_signal[start_fft:end_idx])
-    
-    plt.figure()
-    plt.plot(imas)
-    plt.title(f"{filepaths[0].split('/')[-1].split('_ID')[0]}")
-    plt.show()
+
 
 def open_dialog_and_select_multiple_files():
     """
@@ -432,87 +317,6 @@ def open_dialog_and_select_multiple_files():
     return list(file_paths)
 
 
-#########################################################
 
-
-filepaths = open_dialog_and_select_multiple_files()
-data, fs_list = [], []
-
-for filepath in filepaths:
-    with open(filepath, "r") as json_file:
-        newdata = json.load(json_file)
-        data.extend(newdata["signal"])
-
-Fs = INITIAL_RATE
-data_formation = np.array(data)
-
-if USE_FILTER:
-    if USE_BANDPASS_FILTER:
-        input_signal = bandpass_filter(data_formation, lowcut, highcut, Fs, order=order)
-    else:
-        input_signal = lowpass_filter(data_formation, highcut, Fs, order=order)
-else:
-    input_signal = data_formation
-
-num_samples = len(input_signal)
-
-
-
-# Plot the upsampled signal
-print('Plotting time..')
-time = np.arange(num_samples) / Fs  # Time array for plotting
-
-
-# Variables to store the selected region
-start_idx = None
-end_idx = None
-
-# Create the main figure
-fig, ax = plt.subplots(figsize=(13, 7))
-ax.plot(time, input_signal)
-ax.set_title(f"{filepaths[0].split('/')[-1]}")
-ax.set_xlabel('Time [s]')
-ax.set_ylabel('Amplitude')
-
-# Create a SpanSelector to select the interval
-# span = SpanSelector(ax, onselect, 'horizontal', useblit=True)
-span_selector = SpanSelector(
-        ax,
-        onselect,
-        'horizontal',
-        useblit=True,
-        props=dict(alpha=0.2, facecolor='blue'),
-        interactive=True,
-        drag_from_anywhere=True
-    )
-
-# Create a button to plot the selected interval
-ax_button = plt.axes([0.8, 0.02, 0.1, 0.04])  # x, y, width, height
-button = Button(ax_button, 'Plot Interval')
-button.on_clicked(plot_selected_interval)
-
-# Create a button to plot the selected interval
-ax_button_play = plt.axes([0.7, 0.02, 0.1, 0.04])  # x, y, width, height
-button_play = Button(ax_button_play, 'Play Sound')
-button_play.on_clicked(play_sound)
-
-ax_button_live_FFT = plt.axes([0.6, 0.02, 0.1, 0.04])  # x, y, width, height
-button_live_FFT = Button(ax_button_live_FFT, 'Live FFT')
-button_live_FFT.on_clicked(live_FFT)
-
-# Add a TextBox to input a number
-ax_text_box = plt.axes([0.5, 0.02, 0.05, 0.04])  # Position for the TextBox
-text_box = TextBox(ax_text_box, 'Metric Window (s)', initial=str(metrics_window_sec))
-
-
-def submit_number(text):
-    try:
-        global metrics_window_sec
-        metrics_window_sec = float(text)
-        print(f"Number entered: {metrics_window_sec}")
-    except ValueError:
-        print("Please enter a valid number.")
-
-# Link the submit function to the TextBox
-text_box.on_submit(submit_number)
-plt.show()
+if  __name__ == "__main__":
+    main()
