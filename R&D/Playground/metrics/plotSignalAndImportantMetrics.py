@@ -48,16 +48,25 @@ def main():
     num_samples     = len(input_signal)
     time            = np.arange(num_samples) / Fs  # Time array for plotting
 
-    # Plot the upsampled signal
-    print('Plotting..')
 
+
+    # Initial Signal
     plot_signal(input_signal, time, filepaths, Fs)
+
+    # MNF/ARV
     semg_mnf_arv_ratio(input_signal, Fs, fft_window_size, overlap=0.5)
+
+    # IMA diff
     plot_IMA_diff(input_signal, Fs, filepaths)
+
+    # Wavedec, EMD, EEMD
     # plot_emd([1,1,0], input_signal, Fs, fft_window_size, fft_step_size)
     # plot_emd_optimized(input_signal, Fs, fft_window_size, fft_step_size)
+    
+    # MFDMA
     # plot_mfdma_features(input_signal)
     mfdma_analysis_haiku(input_signal, window_sizes=None)
+
 
     plt.show()
 
