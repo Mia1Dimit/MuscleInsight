@@ -13,8 +13,8 @@ from scipy.signal import welch, hilbert, periodogram
 from scipy.stats import entropy
 from math import log2
 from PyEMD import EMD, EEMD
-import pywt
-
+from pywt import wavedec
+from MFDFA import MFDFA
 
 #############################
 # Configuration
@@ -57,7 +57,10 @@ def main():
     # plot_emd([1,1,0], input_signal, Fs, fft_window_size, fft_step_size)
     # plot_emd_optimized(input_signal, Fs, fft_window_size, fft_step_size)
     # plot_mfdma_features(input_signal)
-    mfdma_analysis_haiku(input_signal, window_sizes=None)
+
+    window_sizes = [320,640,1280,2560]
+    q_vals = [-5,-2,0,2,5] 
+    mfdma_with_segments(input_signal, window_sizes, q_vals, poly_degree=2, plot_segments=['first', 'last'])
 
     plt.show()
 
@@ -102,7 +105,7 @@ def plot_emd_optimized(signal, sampling_rate, window_size, step_size):
     ])
 
     # 1. Discrete Wavelet Transform (DWT) - Optimized
-    coeffs = pywt.wavedec(signal, 'db4', level=5)
+    coeffs = wavedec(signal, 'db4', level=5)
     d1_component = coeffs[0]
     segments_d1 = segment_signal_numpy(d1_component, window_size // 2, step_size // 2)
     mfs_dwt = np.array([
@@ -157,7 +160,7 @@ def plot_emd(choice, signal, sampling_rate, window_size, step_size):
     # Preprocessing Methods
     # 1. Discrete Wavelet Transform (DWT)
     if choice[0]:
-        coeffs = pywt.wavedec(signal, 'db4', level=5)
+        coeffs = wavedec(signal, 'db4', level=5)
         d1_component = coeffs[0]  # Highest frequency component
         segments_d1 = segment_signal(d1_component, window_size // 2, step_size // 2)
         mfs_dwt = [calculate_median_frequency(segment, sampling_rate / 2) for segment in segments_d1]
@@ -291,154 +294,103 @@ def plot_mfdma_features(signal):
     
     print("Done.")
 
-def mfdma_analysis_haiku(input_signal, window_sizes=None, min_segment_length=4):
+def mfdma_with_segments(data, window_sizes, q_vals, poly_degree=2, plot_segments=['first', 'last']):
     """
-    Perform Multifractal Detrended Moving Average (MFDMA) analysis with improved robustness.
+    Perform Multifractal Detrended Moving Average (MFDMA) and plot results for first and last segments.
     
     Parameters:
-    -----------
-    input_signal : array_like
-        Input signal time series
-    window_sizes : array_like, optional
-        Range of window sizes (default: logarithmically spaced)
-    min_segment_length : int, optional
-        Minimum segment length to prevent linear algebra issues (default: 4)
-    
+        data (array-like): The input time series data.
+        window_sizes (list): List of window sizes (s) for analysis.
+        q_vals (array-like): Range of q values (e.g., np.arange(-5, 6)).
+        poly_degree (int): Degree of polynomial for detrending.
+        plot_segments (list): List containing 'first', 'last', or both.
+        
     Returns:
-    --------
-    dict: Contains multifractal features and analysis results
+        dict: Contains h(q), alpha, and f(alpha) for each requested segment.
     """
-    # Ensure input is a numpy array
-    x = np.asarray(input_signal, dtype=float)
+    def calculate_fluctuations(data_segment, s, poly_degree):
+        """Calculate fluctuation for a given segment and window size."""
+        n_segments = len(data_segment) // s
+        F_s = []
+        for i in range(n_segments):
+            segment = data_segment[i * s : (i + 1) * s]
+            x = np.arange(s)
+            coeffs = np.polyfit(x, segment, poly_degree)
+            trend = np.polyval(coeffs, x)
+            F_s.append(np.mean((segment - trend) ** 2))
+        return np.sqrt(np.mean(F_s))
     
-    # If window sizes not provided, create logarithmic scale
-    if window_sizes is None:
-        # Ensure window sizes are not too small
-        max_window = len(x) // 10
-        window_sizes = np.logspace(0, np.log10(max_window), 20, dtype=int)
-        window_sizes = window_sizes[window_sizes >= min_segment_length]
-    
-    # Ensure window sizes are valid
-    window_sizes = np.unique(np.clip(window_sizes, min_segment_length, len(x)//2))
-    
-    # Initialize storage for fluctuation functions
-    q_range = np.linspace(-5, 5, 21)
-    F_q = np.zeros((len(q_range), len(window_sizes)))
-    
-    # Integrate the signal
-    x_integrated = np.cumsum(x - np.mean(x))
-    
-    # Compute fluctuation function for each q-order and window size
-    for j, window in enumerate(window_sizes):
-        # Divide integrated signal into non-overlapping segments
-        segments = [x_integrated[i:i+window] for i in range(0, len(x_integrated)-window+1, window)]
-        
-        # Robust trend estimation
-        segment_trends = []
-        for seg in segments:
-            try:
-                # Use robust linear regression 
-                if len(seg) < min_segment_length:
-                    # If segment is too short, use mean as trend
-                    trend = np.ones_like(seg) * np.mean(seg)
+    def perform_analysis(segment, window_sizes, q_vals):
+        """Perform fluctuation analysis for each window size and q value."""
+        fluctuation_results = []
+        for s in window_sizes:
+            F_q = []
+            for q in q_vals:
+                fluctuations = calculate_fluctuations(segment, s, poly_degree)
+                if q == 0:
+                    F_q.append(np.log(fluctuations))  # q = 0 is a special case
                 else:
-                    # Standard linear trend
-                    x_seg = np.arange(len(seg))
-                    coeffs = np.polyfit(x_seg, seg, 1)
-                    trend = np.polyval(coeffs, x_seg)
-                segment_trends.append(trend)
-            except Exception:
-                # Fallback to mean trend if any computation fails
-                trend = np.ones_like(seg) * np.mean(seg)
-                segment_trends.append(trend)
-        
-        # Compute fluctuations
-        fluctuations = [(seg - trend)**2 for seg, trend in zip(segments, segment_trends)]
-        
-        # Compute fluctuation function for different q-orders
-        for i, q in enumerate(q_range):
-            if q == 0:
-                # Use log of fluctuations for q=0
-                F_q[i, j] = np.exp(0.5 * np.mean(np.log(np.maximum(fluctuations, 1e-10))))
-            else:
-                F_q[i, j] = (np.mean([fl**q for fl in fluctuations]))**(1/q)
+                    F_q.append((fluctuations ** q) ** (1 / q))
+            fluctuation_results.append(F_q)
+        return np.array(fluctuation_results)
     
-    # Compute Hurst exponent and multifractal spectrum
-    h_q = np.zeros_like(q_range)
-    for i in range(len(q_range)):
-        # Prevent log(0) and handle potential numerical issues
-        valid_indices = (F_q[i, :] > 0) & (window_sizes > 0)
-        if np.sum(valid_indices) < 2:
-            # Not enough valid data points
-            continue
-        
-        # Linear regression of log(F_q) vs log(window_sizes)
-        log_windows = np.log(window_sizes[valid_indices])
-        log_fq = np.log(F_q[i, valid_indices])
-        
-        try:
-            coeffs = np.polyfit(log_windows, log_fq, 1)
-            h_q[i] = coeffs[0]
-        except Exception:
-            h_q[i] = np.nan
+    def compute_hurst_and_spectrum(results, q_vals):
+        """Compute Hurst exponents and multifractal spectrum."""
+        log_s = np.log(window_sizes)
+        h_q = []
+        for q_index in range(len(q_vals)):
+            log_F_q = np.log(results[:, q_index])
+            h, _ = np.polyfit(log_s, log_F_q, 1)
+            h_q.append(h)
+        h_q = np.array(h_q)
+        alpha = h_q + q_vals * h_q
+        f_alpha = q_vals * alpha - h_q
+        return h_q, alpha, f_alpha
     
-    # Clean up Hurst exponent
-    h_q = h_q[~np.isnan(h_q)]
+    first_segment = data[:window_sizes[-1]]
+    last_segment = data[-window_sizes[-1]:]
     
-    # Compute multifractal spectrum
-    f_alpha = q_range[:len(h_q)] * h_q - 1
-    alpha = (f_alpha - np.min(f_alpha)) / (np.max(f_alpha) - np.min(f_alpha))
+    results = {}
+    if 'first' in plot_segments:
+        first_results = perform_analysis(first_segment, window_sizes, q_vals)
+        h_q_first, alpha_first, f_alpha_first = compute_hurst_and_spectrum(first_results, q_vals)
+        results['first'] = {'h_q': h_q_first, 'alpha': alpha_first, 'f_alpha': f_alpha_first}
     
-    # Compute key multifractal features
-    features = {
-        'Span of Multifractal Singularity (SOM)': np.max(alpha) - np.min(alpha),
-        'Degree of Multifractality (DOM)': np.std(h_q) if len(h_q) > 0 else 0,
-        'Peak Singularity Exponent (PSE)': alpha[np.argmax(f_alpha)] if len(alpha) > 0 else 0
-    }
+    if 'last' in plot_segments:
+        last_results = perform_analysis(last_segment, window_sizes, q_vals)
+        h_q_last, alpha_last, f_alpha_last = compute_hurst_and_spectrum(last_results, q_vals)
+        results['last'] = {'h_q': h_q_last, 'alpha': alpha_last, 'f_alpha': f_alpha_last}
     
-    # Plotting
-    plt.figure(figsize=(15, 5))
+    # Plot results
+    plt.figure(figsize=(12, 6))
     
-    # Plot 1: Fluctuation Function
-    plt.subplot(131)
-    plt.loglog(window_sizes, F_q.T, 'o-')
-    plt.title('Fluctuation Function')
-    plt.xlabel('Window Size')
-    plt.ylabel('F(q, window_size)')
-    plt.legend([f'q={q}' for q in q_range], loc='best', ncol=2)
-    
-    # Plot 2: Hurst Exponent
-    plt.subplot(132)
-    plt.plot(q_range[:len(h_q)], h_q, 'o-')
-    plt.title('Generalized Hurst Exponent')
-    plt.xlabel('q-order')
-    plt.ylabel('h(q)')
-    
-    # Plot 3: Multifractal Spectrum
-    plt.subplot(133)
-    plt.plot(alpha, f_alpha, 'o-')
+    # Subplot 1: f(α) vs α
+    plt.subplot(1, 2, 1)
+    if 'first' in plot_segments:
+        plt.plot(results['first']['alpha'], results['first']['f_alpha'], label='First Segment')
+    if 'last' in plot_segments:
+        plt.plot(results['last']['alpha'], results['last']['f_alpha'], label='Last Segment')
+    plt.xlabel('α (Singularity Strength)')
+    plt.ylabel('f(α) (Multifractal Spectrum)')
     plt.title('Multifractal Spectrum')
-    plt.xlabel('Singularity Strength (α)')
-    plt.ylabel('Singularity Dimension (f(α))')
+    plt.legend()
+    
+    # Subplot 2: h(q) vs q
+    plt.subplot(1, 2, 2)
+    if 'first' in plot_segments:
+        plt.plot(q_vals, results['first']['h_q'], label='First Segment')
+    if 'last' in plot_segments:
+        plt.plot(q_vals, results['last']['h_q'], label='Last Segment')
+    plt.xlabel('q')
+    plt.ylabel('h(q) (Hurst Exponent)')
+    plt.title('Hurst Exponents vs q')
+    plt.legend()
     
     plt.tight_layout()
+    plt.show()
     
-    # Print features
-    print("Multifractal Features:")
-    for name, value in features.items():
-        print(f"{name}: {value:.4f}")
-    
-    return {
-        'fluctuation_function': F_q,
-        'window_sizes': window_sizes,
-        'hurst_exponent': h_q,
-        'multifractal_spectrum': {
-            'alpha': alpha,
-            'f_alpha': f_alpha
-        },
-        'features': features
-    }
-    
+    return results
+
 def semg_mnf_arv_ratio(semg_signal, sampling_rate, window_size, overlap=0.5):
     """
     Calculate and plot the ratio of Mean Frequency (MNF) to Average Rectified Value (ARV)
@@ -514,7 +466,6 @@ def semg_mnf_arv_ratio(semg_signal, sampling_rate, window_size, overlap=0.5):
     # print(f"Maximum Ratio: {np.max(results['mnf_arv_ratio']):.4f}")
     
     return results
-
 
 def calculate_median_frequency(signal, fs):
     freqs, psd = welch(signal, fs=fs, nperseg=1024)
