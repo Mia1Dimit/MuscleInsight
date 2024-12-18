@@ -5,11 +5,11 @@ Merges the signal data from all the selected files and plots it.
 
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.fft import fft, fftfreq
+from scipy.fft import fftfreq
 import tkinter as tk
 from tkinter import filedialog
 import json
-from scipy.signal import welch, hilbert, periodogram
+from scipy.signal import welch, hilbert
 from scipy.stats import entropy
 from math import log2
 from PyEMD import EMD, EEMD
@@ -21,8 +21,8 @@ import pywt
 
 INITIAL_RATE = 800.0
 
-fft_window_size = 1024*2
-fft_step_size = fft_window_size//2
+window_size = 1024*2
+step_size = window_size//32
 
 #############################
 
@@ -54,14 +54,14 @@ def main():
     plot_signal(input_signal, time, filepaths, Fs)
 
     # MNF/ARV
-    semg_mnf_arv_ratio(input_signal, Fs, fft_window_size, overlap=0.5)
+    plot_mnf_arv_ratio(input_signal, time, Fs, window_size, step_size, filepaths)
 
     # IMA diff
-    plot_IMA_diff(input_signal, Fs, filepaths)
+    plot_IMA_diff(input_signal, time, Fs, filepaths)
 
     # Wavedec, EMD, EEMD
-    # plot_emd([1,1,0], input_signal, Fs, fft_window_size, fft_step_size)
-    # plot_emd_optimized(input_signal, Fs, fft_window_size, fft_step_size)
+    # plot_emd([1,1,0], input_signal, Fs, window_size, step_size)
+    # plot_emd_optimized(input_signal, Fs, window_size, step_size)
     
     # MFDMA
     # plot_mfdma_features(input_signal)
@@ -77,7 +77,7 @@ def main():
 def plot_signal(input_signal, time, filepaths, Fs):
     print("Plotting signal..   ", end='')
     # Create the main figure
-    fig = plt.figure(figsize=(6, 4))
+    fig = plt.figure()
     plt.plot(time, input_signal)
     plt.title(f"Signal: {filepaths[0].split('/')[-1].split('_ID')[0]}")
     plt.xlabel('Time [s]')
@@ -85,15 +85,16 @@ def plot_signal(input_signal, time, filepaths, Fs):
     
     print("Done.")
 
-def plot_IMA_diff(input_signal, Fs, filepaths):
+def plot_IMA_diff(input_signal, time, Fs, filepaths):
     print("Plotting IMA diff..   ", end='')
 
-    imas, imas_time = calc_progressive_fft(input_signal, Fs)
+    imas, imas_time = calc_progressive_fft(input_signal, time, Fs)
     
-    plt.figure(figsize=(6, 4))
+    plt.figure()
     plt.plot(imas_time, imas)
     plt.xlabel("Time (s)")
     plt.title(f"IMA Low-High Component Difference ({filepaths[0].split('/')[-1].split('_ID')[0]})")
+    plt.grid()
     # plt.show()
     
     print("Done.")
@@ -416,19 +417,19 @@ def mfdma_analysis_haiku(input_signal, window_sizes=None, min_segment_length=4):
     plt.ylabel('F(q, window_size)')
     plt.legend([f'q={q}' for q in q_range], loc='best', ncol=2)
     
-    # Plot 2: Hurst Exponent
-    plt.subplot(132)
-    plt.plot(q_range[:len(h_q)], h_q, 'o-')
-    plt.title('Generalized Hurst Exponent')
-    plt.xlabel('q-order')
-    plt.ylabel('h(q)')
+    # # Plot 2: Hurst Exponent
+    # plt.subplot(132)
+    # plt.plot(q_range[:len(h_q)], h_q, 'o-')
+    # plt.title('Generalized Hurst Exponent')
+    # plt.xlabel('q-order')
+    # plt.ylabel('h(q)')
     
-    # Plot 3: Multifractal Spectrum
-    plt.subplot(133)
-    plt.plot(alpha, f_alpha, 'o-')
-    plt.title('Multifractal Spectrum')
-    plt.xlabel('Singularity Strength (α)')
-    plt.ylabel('Singularity Dimension (f(α))')
+    # # Plot 3: Multifractal Spectrum
+    # plt.subplot(133)
+    # plt.plot(alpha, f_alpha, 'o-')
+    # plt.title('Multifractal Spectrum')
+    # plt.xlabel('Singularity Strength (α)')
+    # plt.ylabel('Singularity Dimension (f(α))')
     
     plt.tight_layout()
     
@@ -448,82 +449,76 @@ def mfdma_analysis_haiku(input_signal, window_sizes=None, min_segment_length=4):
         'features': features
     }
     
-def semg_mnf_arv_ratio(semg_signal, sampling_rate, window_size, overlap=0.5):
-    """
-    Calculate and plot the ratio of Mean Frequency (MNF) to Average Rectified Value (ARV)
-    
-    Parameters:
-    -----------
-    semg_signal : array_like
-        Input sEMG time series signal
-    sampling_rate : float
-        Sampling frequency of the signal (Hz)
-    window_size : float
-        Window size in seconds
-    overlap : float, optional
-        Overlap between windows (0-1, default: 0.5)
-    
-    Returns:
-    --------
-    dict: Contains MNF/ARV ratio analysis results
-    """
-    # Convert signal to numpy array
-    signal_data = semg_signal
-    
-    # Convert window size to samples
-    window_samples = int(window_size * sampling_rate)
-    overlap_samples = int(window_samples * overlap)
-    
-    # Prepare storage for results
-    results = {
-        'mnf_arv_ratio': [],
-        'mnf': [],
-        'arv': [],
-        'time_points': []
-    }
-    
-    # Sliding window analysis
-    for start in range(0, len(signal_data) - window_samples + 1, window_samples - overlap_samples):
-        # Extract window
-        window = signal_data[start:start+window_samples]
-        
-        # Compute frequency spectrum
-        f, Pxx = periodogram(window, fs=sampling_rate)
-        
-        # Mean Frequency Calculation
-        mnf = np.sum(f * Pxx) / np.sum(Pxx)
-        
-        # Average Rectified Value
-        arv = np.mean(np.abs(window))
-        
-        # Calculate MNF/ARV ratio (handle potential zero division)
-        mnf_arv_ratio = mnf / arv if arv != 0 else 0
-        
-        # Store results
-        results['mnf'].append(mnf)
-        results['arv'].append(arv)
-        results['mnf_arv_ratio'].append(mnf_arv_ratio)
-        results['time_points'].append(start / sampling_rate)
+def plot_mnf_arv_ratio(semg_signal, time, sampling_rate, window_size, step_size, filepaths):
+
+    results = segment_and_calculate_mnf_arv_ratio(semg_signal, time, sampling_rate, window_size, step_size)
     
     # Create plot
-    plt.figure(figsize=(12, 6))
-    plt.plot(results['time_points'], results['mnf_arv_ratio'], 'g-')
-    plt.title(f'MNF/ARV Ratio (Window Size: {window_size}s)')
+    plt.figure()
+    plt.plot(results['time_points'], [1/x for x in results['mnf_arv_ratio']], 'g-') 
+    # plt.plot(results['time_points'], results['mnf_arv_ratio'], 'g-')
+    # plt.title(f'MNF/ARV Ratio ({filepaths[0].split('/')[-1].split('_ID')[0]})')
+    # plt.xlabel('Time (s)')
+    # plt.ylabel('MNF/ARV Ratio')
+    plt.title(f"ARV/MNF Ratio ({filepaths[0].split('/')[-1].split('_ID')[0]})")
     plt.xlabel('Time (s)')
-    plt.ylabel('MNF/ARV Ratio')
-    plt.grid(True)
-    plt.tight_layout()
+    plt.ylabel('ARV/MNF Ratio')
+    plt.grid()
     
     
     # Statistical summary
-    print("MNF/ARV Ratio Analysis:")
-    print(f"Mean Ratio: {np.mean(results['mnf_arv_ratio']):.4f}")
-    print(f"Ratio Standard Deviation: {np.std(results['mnf_arv_ratio']):.4f}")
-    # print(f"Minimum Ratio: {np.min(results['mnf_arv_ratio']):.4f}")
-    # print(f"Maximum Ratio: {np.max(results['mnf_arv_ratio']):.4f}")
+    # print("MNF/ARV Ratio Analysis:")
+    # print(f"Mean Ratio: {np.mean(results['mnf_arv_ratio']):.4f}")
+    # print(f"Ratio Standard Deviation: {np.std(results['mnf_arv_ratio']):.4f}")
     
     return results
 
+
+
+def segment_and_calculate_mnf_arv_ratio(signal, time, sampling_rate, window_size, step_size):
+    """
+    Segment a signal into overlapping windows and calculate the MNF for each segment.
+
+    Parameters:
+        signal (np.ndarray): The input signal (time-domain).
+        sampling_rate (float): The sampling rate of the signal in Hz.
+        window_size (float): The size of each window in seconds.
+        step_size (float): The step size between consecutive windows in seconds.
+
+    Returns:
+        list: A list of MNF values for each segment.
+    """
+    # Convert window and step size from seconds to samples
+    window_samples = window_size
+    step_samples = step_size
+
+    # Ensure valid parameters
+    if window_samples <= 0 or step_samples <= 0:
+        raise ValueError("Window size and step size must be greater than 0.")
+
+    if len(signal) < window_samples:
+        window_samples = len(signal)
+
+    ratios = []
+    time_values = []
+
+    # Iterate over the signal with the given window and step size
+    for start in range(0, len(signal) - window_samples + 1, step_samples):
+        segment = signal[start:start + window_samples]
+        mnf = calculate_mnf(segment, sampling_rate)
+        arv = np.mean(np.abs(segment))
+        ratios.append(mnf/arv)
+        time_values.append((time[start]+time[start + window_samples]) /2)
+
+    return {'time_points': time_values, 'mnf_arv_ratio': ratios}
+
+# Helper function for MNF calculation (from the earlier implementation)
+def calculate_mnf(signal, sampling_rate):
+    freqs = np.fft.rfftfreq(len(signal), d=1/sampling_rate)
+    fft_vals = np.fft.rfft(signal)
+    psd = np.abs(fft_vals) ** 2
+    mnf = np.sum(freqs * psd) / np.sum(psd)
+    return mnf
 
 def calculate_median_frequency(signal, fs):
     freqs, psd = welch(signal, fs=fs, nperseg=1024)
@@ -531,6 +526,26 @@ def calculate_median_frequency(signal, fs):
     total_energy = cumulative_energy[-1]
     mf = freqs[np.searchsorted(cumulative_energy, total_energy / 2)]
     return mf
+
+def calculate_mnf(signal, sampling_rate):
+    """
+    Calculate the Mean Frequency (MNF) of a signal.
+
+    Parameters:
+        signal (np.ndarray): The input signal (time-domain).
+        sampling_rate (float): The sampling rate of the signal in Hz.
+
+    Returns:
+        float: The mean frequency of the signal.
+    """
+    # Compute the Power Spectral Density (PSD) using FFT
+    freqs = np.fft.rfftfreq(len(signal), d=1/sampling_rate)
+    fft_vals = np.fft.rfft(signal)
+    psd = np.abs(fft_vals) ** 2
+
+    # Calculate MNF (frequency-weighted average of the power spectrum)
+    mnf = np.sum(freqs * psd) / np.sum(psd)
+    return mnf
 
 def segment_signal(signal, window_size, step_size):
     segments = []
@@ -753,9 +768,9 @@ def get_fft_values(signal):
 
     return positive_fft_values
 
-def calc_progressive_fft(signal, Fs):
+def calc_progressive_fft(signal, time, Fs):
     # Setup frequencies for the FFT (only positive frequencies)
-    frequencies = fftfreq(fft_window_size, 1 / Fs)[:fft_window_size // 2]
+    frequencies = fftfreq(window_size, 1 / Fs)[:window_size // 2]
     index_25 = min(range(len(frequencies)), key=lambda i: abs(frequencies[i] - 25))
     index_80 = min(range(len(frequencies)), key=lambda i: abs(frequencies[i] - 80))
     index_350 = min(range(len(frequencies)), key=lambda i: abs(frequencies[i] - 350))
@@ -767,19 +782,19 @@ def calc_progressive_fft(signal, Fs):
     idx = 0
     running = True  # Control flag for stopping early
 
-    while idx + fft_window_size <= len(signal) and running:
+    while idx + window_size <= len(signal) and running:
         # Extract the current window of the signal
-        windowed_signal = signal[idx:idx + fft_window_size]
+        windowed_signal = signal[idx:idx + window_size]
 
         # Perform FFT and get magnitude (assuming m.get_fft_values exists)
         fft_magnitudes = get_fft_values(windowed_signal)
         
         # Update imas
         imas.append(np.mean(fft_magnitudes[index_25:index_80]) - np.mean(fft_magnitudes[index_80:index_350]))
-        imas_time.append(idx + fft_window_size/2)
+        imas_time.append((time[idx] + time[idx + window_size])/2)
 
         # Increment the index by step_size
-        idx += fft_step_size
+        idx += step_size
 
     return imas, imas_time
 
