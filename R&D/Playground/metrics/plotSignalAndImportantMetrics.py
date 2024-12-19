@@ -21,7 +21,7 @@ from PyEMD import EMD, EEMD
 INITIAL_RATE = 800.0
 
 window_size = 1024*1
-step_size = window_size//16
+step_size = window_size//8
 
 #############################
 
@@ -61,9 +61,12 @@ def main():
     # EMD, EEMD
     plot_EMD(input_signal, time, Fs, window_size, step_size, filepaths)
     
-    # MFDMA
-    plot_mfdma_metrics(input_signal, time, window_size, step_size, filepaths)
+    # Fluctuation Metrics
+    plot_signal_fluctuation_metrics(input_signal, time, window_size, step_size, filepaths)
 
+    # MFDMA
+    results = mfdma(input_signal)
+    plot_mfdma_results(results)
 
     plt.show()
 
@@ -83,25 +86,33 @@ def plot_signal(input_signal, time, filepaths, Fs):
     print("Done.")
 
 def plot_mnf_arv_ratio(semg_signal, time, sampling_rate, window_size, step_size, filepaths):
+    print("Plotting MNF/ARV Ratio..   ", end='')
 
     results = segment_and_calculate_mnf_arv_ratio(semg_signal, time, sampling_rate, window_size, step_size)
-    
+    cor_window = window_size *len(results['mnf/arv'])  //len(semg_signal)
+    cor_step = 2*step_size *len(results['mnf/arv'])  //len(semg_signal)
+    if cor_step == 0:
+        cor_step = 1
+
     # Create plot
     plt.figure()
-    # plt.plot(results['time_points'], results['mnf_arv_ratio'], 'g-')
-    plt.plot(results['time_points'], [1/x for x in results['mnf_arv_ratio']], 'g-') 
-    # plt.title(f'MNF/ARV Ratio ({filepaths[0].split('/')[-1].split('_ID')[0]})')
-    # plt.xlabel('Time (s)')
-    # plt.ylabel('MNF/ARV Ratio')
-    plt.title(f"ARV/MNF Ratio ({filepaths[0].split('/')[-1].split('_ID')[0]})")
+    plt.plot(results['time_points'], results['mnf/arv'], 'g-')
+    # plt.plot(results['time_points'], [1/x for x in results['mnf_arv_ratio']], 'g-') 
+    plt.title(f"MNF/ARV Ratio ({filepaths[0].split('/')[-1].split('_ID')[0]})")
     plt.xlabel('Time (s)')
-    plt.ylabel('ARV/MNF Ratio')
+    plt.ylabel('MNF/ARV Ratio')
+    # plt.title(f"ARV/MNF Ratio ({filepaths[0].split('/')[-1].split('_ID')[0]})")
+    # plt.xlabel('Time (s)')
+    # plt.ylabel('ARV/MNF Ratio')
     plt.grid()
 
+    cor = []
+    for i in range(0, len(results['mnf/arv'])-cor_window, cor_step):
+        cor.append(np.corrcoef(results['mnfs'][i:i+cor_window], results['arvs'][i:i+cor_window])[0, 1])
     plt.figure()
-    plt.plot(results['time_points'], results['corrcoef'])
+    plt.plot(cor)
     plt.title(f"Correlation Coefficient between MNF - ARV ({filepaths[0].split('/')[-1].split('_ID')[0]})")
-    plt.xlabel('Time (s)')
+    # plt.xlabel('Time (s)')
     plt.ylabel('Correlation Coefficient')
     plt.grid()
     
@@ -109,7 +120,8 @@ def plot_mnf_arv_ratio(semg_signal, time, sampling_rate, window_size, step_size,
     # print("MNF/ARV Ratio Analysis:")
     # print(f"Mean Ratio: {np.mean(results['mnf_arv_ratio']):.4f}")
     # print(f"Ratio Standard Deviation: {np.std(results['mnf_arv_ratio']):.4f}")
-    
+
+    print("Done.")
     return results
 
 def plot_IMA_diff(input_signal, time, Fs, filepaths):
@@ -174,73 +186,181 @@ def plot_EMD(signal, time, sampling_rate, window_size, step_size, filepaths):
 
     print("Done.")
 
-def plot_mfdma_metrics(signal, time, window_len, step_len, filepaths):
-
-    metrics, time_axis, signal_mfdma = calc_mfdma_metrics(signal, time, window_len, step_len)
+def plot_signal_fluctuation_metrics(signal, time, window_len, step_len, filepaths):
+    metrics, time_axis, processed_signal = compute_windowed_signal_metrics(
+        signal, time, window_len, step_len
+    )
     
     plt.figure()
-    plt.plot(time, signal_mfdma)
+    plt.plot(time, processed_signal)
     plt.xlabel("Time (s)")
-    plt.title(f"MFDMA Signal ({filepaths[0].split('/')[-1].split('_ID')[0]})")
+    plt.title(f"Processed Signal ({filepaths[0].split('/')[-1].split('_ID')[0]})")
     plt.grid()
 
     plt.figure(figsize=(12, 8))
     
-    # Plot each metric
     plt.subplot(4, 1, 1)
-    plt.plot(time_axis, metrics["SOM"], label="SOM", color="b")
-    plt.title(f"Strength of Multifractality (SOM) ({filepaths[0].split('/')[-1].split('_ID')[0]})")
-    plt.ylabel("SOM")
+    plt.plot(time_axis, metrics["variance"], label="Variance", color="b")
+    plt.title(f"Signal Variance ({filepaths[0].split('/')[-1].split('_ID')[0]})")
+    plt.ylabel("Variance")
     plt.grid(True)
     
     plt.subplot(4, 1, 2)
-    plt.plot(time_axis, metrics["DOM"], label="DOM", color="g")
-    plt.title("Degree of Multifractality (DOM)")
-    plt.ylabel("DOM")
+    plt.plot(time_axis, metrics["range"], label="Range", color="g")
+    plt.title("Signal Range")
+    plt.ylabel("Range")
     plt.grid(True)
     
     plt.subplot(4, 1, 3)
-    plt.plot(time_axis, metrics["DFS"], label="DFS", color="r")
-    plt.title("Difference of Multifractal Spectrum (DFS)")
-    plt.ylabel("DFS")
+    plt.plot(time_axis, metrics["mean_diff"], label="Mean Diff", color="r")
+    plt.title("Mean Absolute Differences")
+    plt.ylabel("Mean Diff")
     plt.grid(True)
     
     plt.subplot(4, 1, 4)
-    plt.plot(time_axis, metrics["PSE"], label="PSE", color="m")
-    plt.title("Peak Singularity Exponent (PSE)")
-    plt.ylabel("PSE")
+    plt.plot(time_axis, metrics["entropy"], label="Entropy", color="m")
+    plt.title("Signal Entropy")
+    plt.ylabel("Entropy")
     plt.xlabel("Time (s)")
     plt.grid(True)
     
-    # Adjust layout and show plot
     plt.tight_layout()
 
+def mfdma(signal, q_orders=[-5, -3, -1, 0, 1, 3, 5], scales=None, window_size=None):
+    """
+    Implement true Multifractal Detrended Moving Average (MFDMA) analysis
+    
+    Parameters:
+    signal: array-like, input signal
+    q_orders: array-like, q-orders for multifractal analysis
+    scales: array-like, scales for analysis (if None, automatically determined)
+    window_size: int, size of moving average window (if None, automatically determined)
+    
+    Returns:
+    dict containing:
+        - fluctuation_functions: F(q,s) for each q-order and scale
+        - hurst_exponents: h(q) for each q-order
+        - multifractal_spectrum: f(α) vs α
+    """
+    if scales is None:
+        scales = np.logspace(1, np.log10(len(signal)/4), 20, dtype=int)
+    
+    if window_size is None:
+        window_size = len(signal) // 10
+
+    # Calculate moving average
+    ma_signal = moving_average(signal, window_size)
+    
+    # Initialize fluctuation functions
+    fluct_funcs = np.zeros((len(q_orders), len(scales)))
+    
+    # Calculate fluctuation functions for each scale and q-order
+    for i, scale in enumerate(scales):
+        # Divide signal into segments
+        n_segments = len(signal) // scale
+        fluctuations = []
+        
+        for j in range(n_segments):
+            segment = signal[j*scale:(j+1)*scale]
+            ma_segment = ma_signal[j*scale:(j+1)*scale]
+            
+            # Remove trend (moving average)
+            detrended = segment - ma_segment
+            
+            # Calculate variance
+            variance = np.mean(detrended**2)
+            fluctuations.append(variance)
+        
+        # Calculate q-order fluctuation functions
+        for q_idx, q in enumerate(q_orders):
+            if q == 0:
+                fluct_funcs[q_idx, i] = np.exp(0.5 * np.mean(np.log(fluctuations)))
+            else:
+                fluct_funcs[q_idx, i] = (np.mean(np.array(fluctuations)**(q/2)))**(1/q)
+    
+    # Calculate generalized Hurst exponents
+    hurst = np.zeros(len(q_orders))
+    for q_idx in range(len(q_orders)):
+        polyfit = np.polyfit(np.log(scales), np.log(fluct_funcs[q_idx]), 1)
+        hurst[q_idx] = polyfit[0]
+    
+    # Calculate multifractal spectrum
+    tau = q_orders * hurst - 1
+    alpha = np.gradient(tau, q_orders)
+    f_alpha = q_orders * alpha - tau
+    
+    return {
+        'fluctuation_functions': fluct_funcs,
+        'scales': scales,
+        'q_orders': q_orders,
+        'hurst_exponents': hurst,
+        'multifractal_spectrum': {
+            'alpha': alpha,
+            'f_alpha': f_alpha
+        }
+    }
+
+def plot_mfdma_results(results):
+    """Plot MFDMA analysis results"""
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15, 5))
+    
+    # Plot fluctuation functions
+    for i, q in enumerate(results['q_orders']):
+        ax1.loglog(results['scales'], results['fluctuation_functions'][i], 
+                  'o-', label=f'q={q}')
+    ax1.set_xlabel('Scale')
+    ax1.set_ylabel('F(q,s)')
+    ax1.set_title('Fluctuation Functions')
+    ax1.legend()
+    ax1.grid(True)
+    
+    # Plot generalized Hurst exponents
+    ax2.plot(results['q_orders'], results['hurst_exponents'], 'o-')
+    ax2.set_xlabel('q')
+    ax2.set_ylabel('h(q)')
+    ax2.set_title('Generalized Hurst Exponents')
+    ax2.grid(True)
+    
+    # Plot multifractal spectrum
+    ax3.plot(results['multifractal_spectrum']['alpha'], 
+             results['multifractal_spectrum']['f_alpha'], 'o-')
+    ax3.set_xlabel('α')
+    ax3.set_ylabel('f(α)')
+    ax3.set_title('Multifractal Spectrum')
+    ax3.grid(True)
+    
+    plt.tight_layout()
+    return fig
 
 
 
-def calc_mfdma_metrics(signal, time, window_len, step_len):
+
+def compute_windowed_signal_metrics(signal, time, window_len, step_len):
     time_axis = []
-    signal_mfdma = do_mfdma(signal)  # Perform MFDMA
+    processed_signal = calculate_scaled_fluctuations(signal)
     
-    som_values, dom_values, dfs_values, pse_values = [], [], [], []
+    variance_values = []
+    range_values = []
+    mean_diff_values = []
+    entropy_values = []
     
-    for start in range(0, len(signal_mfdma) - window_len + 1, step_len):
-        segment = signal_mfdma[start:start + window_len]
-        som_values.append(calc_SOM(segment))
-        dom_values.append(calc_DOM(segment))
-        dfs_values.append(calc_DFS(segment))
-        pse_values.append(calc_PSE(segment))
+    for start in range(0, len(processed_signal) - window_len + 1, step_len):
+        segment = processed_signal[start:start + window_len]
+        variance_values.append(calculate_signal_variance(segment))
+        range_values.append(calculate_signal_range(segment))
+        mean_diff_values.append(calculate_mean_differences(segment))
+        entropy_values.append(calculate_signal_entropy(segment))
         time_axis.append((time[start] + time[start + window_len]) / 2)
     
     return {
-        "SOM": np.array(som_values),
-        "DOM": np.array(dom_values),
-        "DFS": np.array(dfs_values),
-        "PSE": np.array(pse_values),
-    }, time_axis, signal_mfdma
+        "variance": np.array(variance_values),
+        "range": np.array(range_values),
+        "mean_diff": np.array(mean_diff_values),
+        "entropy": np.array(entropy_values),
+    }, time_axis, processed_signal
 
-def do_mfdma(signal, scales=[5, 10, 20, 40], order=1):
-    mfdma_result = np.zeros_like(signal, dtype=np.float64)
+def calculate_scaled_fluctuations(signal, scales=[5, 10, 20, 40]):
+    result = np.zeros_like(signal, dtype=np.float64)
     
     for scale in scales:
         segments = len(signal) // scale
@@ -258,34 +378,38 @@ def do_mfdma(signal, scales=[5, 10, 20, 40], order=1):
             rescaled_fluctuations = np.concatenate([rescaled_fluctuations, padding])
         
         rescaled_fluctuations = rescaled_fluctuations[:len(signal)]
-        mfdma_result += rescaled_fluctuations
+        result += rescaled_fluctuations
     
-    return mfdma_result / len(scales)
+    return result / len(scales)
 
-def calc_SOM(segment):
-    """Strength of Multifractality: Variance over time (scaled fluctuations)"""
+def calculate_signal_variance(segment):
+    """Calculate variance of the signal segment"""
     return np.var(segment)
 
-def calc_DOM(segment):
-    """Degree of Multifractality: Range of the signal segment"""
+def calculate_signal_range(segment):
+    """Calculate range of the signal segment"""
     return np.max(segment) - np.min(segment)
 
-def calc_DFS(segment):
-    """Difference of Multifractal Spectrum: Mean absolute difference of fluctuations"""
+def calculate_mean_differences(segment):
+    """Calculate mean absolute differences between consecutive points"""
     return np.mean(np.abs(np.diff(segment)))
 
-def calc_PSE(segment):
-    """Peak Singularity Exponent: Permutation entropy (normalized Shannon entropy)"""
+def calculate_signal_entropy(segment):
+    """Calculate Shannon entropy of the signal segment distribution"""
     hist, _ = np.histogram(segment, bins=10, density=True)
     return entropy(hist, base=2)
 
-def detrend(signal, type='linear'):
-    if type == 'linear':
-        x = np.arange(len(signal))
-        p = np.polyfit(x, signal, 1)
-        trend = np.polyval(p, x)
-        return signal - trend
-    return signal
+def moving_average(signal, window_size):
+    """Calculate centered moving average of the signal"""
+    weights = np.ones(window_size) / window_size
+    ma = np.convolve(signal, weights, mode='same')
+    
+    # Handle edges
+    half_window = window_size // 2
+    ma[:half_window] = ma[half_window]
+    ma[-half_window:] = ma[-half_window-1]
+    
+    return ma
 
 def segment_and_calculate_mnf_arv_ratio(signal, time, sampling_rate, window_size, step_size):
     """
@@ -311,7 +435,7 @@ def segment_and_calculate_mnf_arv_ratio(signal, time, sampling_rate, window_size
     if len(signal) < window_samples:
         window_samples = len(signal)
 
-    ratios, corrcoef = [], []
+    mnfs, arvs = [], []
     time_values = []
 
     # Iterate over the signal with the given window and step size
@@ -319,19 +443,11 @@ def segment_and_calculate_mnf_arv_ratio(signal, time, sampling_rate, window_size
         segment = signal[start:start + window_samples]
         mnf = calculate_mnf(segment, sampling_rate)
         arv = np.mean(np.abs(segment))
-        ratios.append(mnf/arv)
-        corrcoef.append( np.corrcoef(mnf, arv)[0, 1] )
-        # print(corrcoef[-1])
+        mnfs.append(mnf)
+        arvs.append(arv)
         time_values.append((time[start]+time[start + window_samples]) /2)
 
-    return {'time_points': time_values, 'mnf_arv_ratio': ratios, 'corrcoef': corrcoef}
-
-def calculate_mnf(signal, sampling_rate):
-    freqs = np.fft.rfftfreq(len(signal), d=1/sampling_rate)
-    fft_vals = np.fft.rfft(signal)
-    psd = np.abs(fft_vals) ** 2
-    mnf = np.sum(freqs * psd) / np.sum(psd)
-    return mnf
+    return {'time_points': time_values, 'mnfs': np.array(mnfs), 'arvs': np.array(arvs), 'mnf/arv': np.array(mnfs)/np.array(arvs)}
 
 def calculate_median_frequency(signal, fs):
     freqs, psd = welch(signal, fs=fs, nperseg=1024)
