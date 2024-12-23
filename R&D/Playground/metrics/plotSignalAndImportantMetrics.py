@@ -64,9 +64,11 @@ def main():
     # Fluctuation Metrics
     plot_signal_fluctuation_metrics(input_signal, time, window_size, step_size, filepaths)
 
-    # MFDMA
-    results = mfdma(input_signal)
-    plot_mfdma_results(results)
+    # MFDMA whole
+    do_whole_mfdma_and_plot(input_signal)
+
+    # MFDMA segments
+    do_segmented_mfdma_and_plot_metrics(input_signal)
 
     plt.show()
 
@@ -226,7 +228,7 @@ def plot_signal_fluctuation_metrics(signal, time, window_len, step_len, filepath
     
     plt.tight_layout()
 
-def mfdma(signal, q_orders=[-5, -3, -1, 0, 1, 3, 5], scales=None, window_size=None):
+def do_whole_mfdma_and_plot(signal, q_orders=[-5, -3, -1, 0, 1, 3, 5], scales=None, window_size=None):
     """
     Implement true Multifractal Detrended Moving Average (MFDMA) analysis
     
@@ -289,7 +291,7 @@ def mfdma(signal, q_orders=[-5, -3, -1, 0, 1, 3, 5], scales=None, window_size=No
     alpha = np.gradient(tau, q_orders)
     f_alpha = q_orders * alpha - tau
     
-    return {
+    rtrnble = {
         'fluctuation_functions': fluct_funcs,
         'scales': scales,
         'q_orders': q_orders,
@@ -299,6 +301,105 @@ def mfdma(signal, q_orders=[-5, -3, -1, 0, 1, 3, 5], scales=None, window_size=No
             'f_alpha': f_alpha
         }
     }
+    plot_mfdma_results(rtrnble)
+
+def do_segmented_mfdma_and_plot_metrics(wholesignal, q_orders=[-5, -3, -1, 0, 1, 3, 5]):
+    """
+    Implement true Multifractal Detrended Moving Average (MFDMA) analysis
+    
+    Parameters:
+    signal: array-like, input signal
+    q_orders: array-like, q-orders for multifractal analysis
+    scales: array-like, scales for analysis (if None, automatically determined)
+    window_size: int, size of moving average window (if None, automatically determined)
+    
+    Returns:
+    dict containing:
+        - fluctuation_functions: F(q,s) for each q-order and scale
+        - hurst_exponents: h(q) for each q-order
+        - multifractal_spectrum: f(α) vs α
+    """
+    
+    window_samples = window_size
+    small_window_size = window_samples // 10
+    
+    dom_li, dfs_li, som_li, pse_li = [],[],[],[]
+
+    for start in range(0, len(wholesignal) - window_samples + 1, step_size):
+        signal = wholesignal[start:start + window_samples]
+        scales = np.logspace(1, np.log10(len(signal)/4), 20, dtype=int)
+
+        # Calculate moving average
+        ma_signal = moving_average(signal, small_window_size)
+        
+        # Initialize fluctuation functions
+        fluct_funcs = np.zeros((len(q_orders), len(scales)))
+        
+        # Calculate fluctuation functions for each scale and q-order
+        for i, scale in enumerate(scales):
+            # Divide signal into segments
+            n_segments = len(signal) // scale
+            fluctuations = []
+            
+            for j in range(n_segments):
+                segment = signal[j*scale:(j+1)*scale]
+                ma_segment = ma_signal[j*scale:(j+1)*scale]
+                
+                # Remove trend (moving average)
+                detrended = segment - ma_segment
+                
+                # Calculate variance
+                variance = np.mean(detrended**2)
+                fluctuations.append(variance)
+            
+            # Calculate q-order fluctuation functions
+            for q_idx, q in enumerate(q_orders):
+                if q == 0:
+                    fluct_funcs[q_idx, i] = np.exp(0.5 * np.mean(np.log(fluctuations)))
+                else:
+                    fluct_funcs[q_idx, i] = (np.mean(np.array(fluctuations)**(q/2)))**(1/q)
+        
+        # Calculate generalized Hurst exponents
+        hurst = np.zeros(len(q_orders))
+        for q_idx in range(len(q_orders)):
+            polyfit = np.polyfit(np.log(scales), np.log(fluct_funcs[q_idx]), 1)
+            hurst[q_idx] = polyfit[0]
+        
+        # Calculate multifractal spectrum
+        tau = q_orders * hurst - 1
+        alpha = np.gradient(tau, q_orders)
+        f_alpha = q_orders * alpha - tau
+        
+        results = {
+            'fluctuation_functions': fluct_funcs,
+            'scales': scales,
+            'q_orders': q_orders,
+            'hurst_exponents': hurst,
+            'multifractal_spectrum': {
+                'alpha': alpha,
+                'f_alpha': f_alpha
+            }
+        }
+        # plot_mfdma_results(results)
+        
+        dom_li.append(abs(max(results['hurst_exponents']) - min(results['hurst_exponents'])))
+        dfs_li.append(abs(results['multifractal_spectrum']['f_alpha'][0] - results['multifractal_spectrum']['f_alpha'][-1]))
+        som_li.append(abs(results['multifractal_spectrum']['alpha'][-1] - results['multifractal_spectrum']['alpha'][0]))
+        pse_li.append(results['multifractal_spectrum']['alpha'][0])
+        # print(dom_li[-1])
+    
+    plt.figure()
+    plt.plot(dom_li, label='DOM')
+    plt.plot(dfs_li, label='DFS')
+    plt.plot(som_li, label='SOM')
+    plt.plot(pse_li, label='PSE')
+    plt.xlabel('Segment Index')
+    plt.ylabel('Value')
+    plt.title('MFDMA Segment Metrics')
+    plt.legend()
+
+
+
 
 def plot_mfdma_results(results):
     """Plot MFDMA analysis results"""
@@ -331,9 +432,6 @@ def plot_mfdma_results(results):
     
     plt.tight_layout()
     return fig
-
-
-
 
 def compute_windowed_signal_metrics(signal, time, window_len, step_len):
     time_axis = []
