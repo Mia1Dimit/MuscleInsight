@@ -9,7 +9,7 @@ Link to Electronics Special Issue details: https://www.mdpi.com/journal/electron
 # Project Timeline & Tasks
 
 ## 1. Initial Setup & Validation
-- [ ] Define project title, Write abstract
+- [x] Define project title, Write abstract
 - [ ] Get approval 
 
 ## 2. Window Size Analysis
