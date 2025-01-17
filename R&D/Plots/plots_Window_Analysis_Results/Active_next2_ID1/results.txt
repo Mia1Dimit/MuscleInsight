@@ -1,0 +1,162 @@
+Parameter Analysis Results:
+==================================================
+
+Window size: 200 samples (0.250 s)
+Step size: 150 samples (0.188 s)
+MNF Reliability: 0.250
+IMA Reliability: 1.000
+EMD Reliability: 0.538
+FLUCT Reliability: 0.177
+Computation time: 0.010458 s
+Average Memory Usage: 162.56 MB
+Average SNR: 20.39 dB
+
+Window size: 200 samples (0.250 s)
+Step size: 100 samples (0.125 s)
+MNF Reliability: 0.250
+IMA Reliability: 1.000
+EMD Reliability: 0.539
+FLUCT Reliability: 0.177
+Computation time: 0.019413 s
+Average Memory Usage: 180.08 MB
+Average SNR: 20.63 dB
+
+Window size: 200 samples (0.250 s)
+Step size: 50 samples (0.062 s)
+MNF Reliability: 0.250
+IMA Reliability: 1.000
+EMD Reliability: 0.541
+FLUCT Reliability: 0.177
+Computation time: 0.018497 s
+Average Memory Usage: 179.99 MB
+Average SNR: 20.60 dB
+
+Window size: 200 samples (0.250 s)
+Step size: 25 samples (0.031 s)
+MNF Reliability: 0.250
+IMA Reliability: 1.000
+EMD Reliability: 0.543
+FLUCT Reliability: 0.177
+Computation time: 0.018698 s
+Average Memory Usage: 185.56 MB
+Average SNR: 20.56 dB
+
+Window size: 400 samples (0.500 s)
+Step size: 300 samples (0.375 s)
+MNF Reliability: 0.500
+IMA Reliability: 1.000
+EMD Reliability: 0.528
+FLUCT Reliability: 0.151
+Computation time: 0.028068 s
+Average Memory Usage: 199.19 MB
+Average SNR: 16.67 dB
+
+Window size: 400 samples (0.500 s)
+Step size: 200 samples (0.250 s)
+MNF Reliability: 0.500
+IMA Reliability: 1.000
+EMD Reliability: 0.530
+FLUCT Reliability: 0.151
+Computation time: 0.028708 s
+Average Memory Usage: 205.69 MB
+Average SNR: 16.73 dB
+
+Window size: 400 samples (0.500 s)
+Step size: 100 samples (0.125 s)
+MNF Reliability: 0.500
+IMA Reliability: 1.000
+EMD Reliability: 0.533
+FLUCT Reliability: 0.151
+Computation time: 0.036168 s
+Average Memory Usage: 194.40 MB
+Average SNR: 16.78 dB
+
+Window size: 400 samples (0.500 s)
+Step size: 50 samples (0.062 s)
+MNF Reliability: 0.500
+IMA Reliability: 1.000
+EMD Reliability: 0.534
+FLUCT Reliability: 0.151
+Computation time: 0.030576 s
+Average Memory Usage: 199.75 MB
+Average SNR: 16.78 dB
+
+Window size: 800 samples (1.000 s)
+Step size: 600 samples (0.750 s)
+MNF Reliability: 1.000
+IMA Reliability: 1.000
+EMD Reliability: 0.497
+FLUCT Reliability: 0.131
+Computation time: 0.043595 s
+Average Memory Usage: 203.45 MB
+Average SNR: 16.43 dB
+
+Window size: 800 samples (1.000 s)
+Step size: 400 samples (0.500 s)
+MNF Reliability: 1.000
+IMA Reliability: 1.000
+EMD Reliability: 0.495
+FLUCT Reliability: 0.131
+Computation time: 0.042071 s
+Average Memory Usage: 206.49 MB
+Average SNR: 16.44 dB
+
+Window size: 800 samples (1.000 s)
+Step size: 200 samples (0.250 s)
+MNF Reliability: 1.000
+IMA Reliability: 1.000
+EMD Reliability: 0.501
+FLUCT Reliability: 0.131
+Computation time: 0.037311 s
+Average Memory Usage: 211.14 MB
+Average SNR: 16.37 dB
+
+Window size: 800 samples (1.000 s)
+Step size: 100 samples (0.125 s)
+MNF Reliability: 1.000
+IMA Reliability: 1.000
+EMD Reliability: 0.504
+FLUCT Reliability: 0.131
+Computation time: 0.034106 s
+Average Memory Usage: 199.10 MB
+Average SNR: 16.41 dB
+
+Window size: 1600 samples (2.000 s)
+Step size: 1200 samples (1.500 s)
+MNF Reliability: 1.000
+IMA Reliability: 1.000
+EMD Reliability: 0.443
+FLUCT Reliability: 0.116
+Computation time: 0.061666 s
+Average Memory Usage: 204.46 MB
+Average SNR: 16.36 dB
+
+Window size: 1600 samples (2.000 s)
+Step size: 800 samples (1.000 s)
+MNF Reliability: 1.000
+IMA Reliability: 1.000
+EMD Reliability: 0.458
+FLUCT Reliability: 0.116
+Computation time: 0.059724 s
+Average Memory Usage: 206.95 MB
+Average SNR: 16.25 dB
+
+Window size: 1600 samples (2.000 s)
+Step size: 400 samples (0.500 s)
+MNF Reliability: 1.000
+IMA Reliability: 1.000
+EMD Reliability: 0.459
+FLUCT Reliability: 0.116
+Computation time: 0.057640 s
+Average Memory Usage: 210.02 MB
+Average SNR: 16.32 dB
+
+Window size: 1600 samples (2.000 s)
+Step size: 200 samples (0.250 s)
+MNF Reliability: 1.000
+IMA Reliability: 1.000
+EMD Reliability: 0.460
+FLUCT Reliability: 0.116
+Computation time: 0.057886 s
+Average Memory Usage: 212.86 MB
+Average SNR: 16.27 dB
