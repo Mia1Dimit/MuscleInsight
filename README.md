@@ -10,12 +10,12 @@ Link to Electronics Special Issue details: https://www.mdpi.com/journal/electron
 
 ## 1. Initial Setup & Validation
 - [x] Define project title, Write abstract
-- [ ] Get approval 
+- [x] Get approval 
 
 ## 2. Window Size Analysis
-- [ ] Document current window sizes and steps
-- [ ] Analyze each metric calculation with different window sizes
-- [ ] Create documentation comparing window sizes
+- [x] Document current window sizes and steps
+- [x] Analyze each metric calculation with different window sizes
+- [x] Create documentation comparing window sizes
 
 ## 3. Baseline Research
 - [ ] Evaluate idle
