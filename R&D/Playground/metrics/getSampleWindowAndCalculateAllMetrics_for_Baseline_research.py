@@ -29,6 +29,14 @@ def main():
 
     filepaths = open_dialog_and_select_multiple_files()
     data = []
+    rest_filepaths  = open_dialog_and_select_multiple_files()
+    rest_filepath = rest_filepaths[0]
+
+    # Read rest signal
+    with open(rest_filepath, 'r') as rest_file:
+        rest_data = json.load(rest_file)
+        rest_signal = np.array(rest_data['signal'])
+
 
     for filepath in filepaths:
         with open(filepath, "r") as json_file:
@@ -37,7 +45,7 @@ def main():
             
 
     Fs              = INITIAL_RATE
-    input_signal    = np.array(data)
+    input_signal    = np.array(data)/ np.sqrt(np.mean(rest_signal**2))
     num_samples     = len(input_signal)
     time            = np.arange(num_samples) / Fs  # Time array for plotting
 
