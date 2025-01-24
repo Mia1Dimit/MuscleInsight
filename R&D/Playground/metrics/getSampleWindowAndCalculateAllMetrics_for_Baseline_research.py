@@ -2,7 +2,7 @@
 Opens a dialog for selecting multiple json files which contain the signal data.
 Merges the signal data from all the selected files and plots it.
 """
-
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.fft import fftfreq
@@ -87,7 +87,7 @@ def main():
         # m["DFS"].append(dfs)
         # m["SOM"].append(som)
         # m["PSE"].append(pse)
-    
+
     plt.figure(1)
     plt.plot(time_points, normalize_array(m['mnf_arv_ratio']), label="mnf_arv_ratio" )
     plt.title(f"{"Window size: ", window_size ," Step size: ", step_size}")
@@ -120,7 +120,7 @@ def main():
     plt.legend()
     plt.xlabel('Time (s)')
     plt.ylabel('Fluctuation metrics')
-    plt.grid()
+    plt.grid() 
 
     # plt.figure(5)
     # plt.plot(m["DOM"])
@@ -135,17 +135,18 @@ def main():
 
 
     stats = calculate_statistics(m)
-    print("\nFile being processed: ",filepath)
-    print("Statistical Analysis:")
-    print("=" * 50)
-    for metric_name, stat_values in stats.items():
-        if stat_values['mean'] is None:
-            print(f"{metric_name}: No data available")
-        else:
-            print(f"\n{metric_name}: Data available")
-            print(f"{metric_name}:")
-            for stat_name, value in stat_values.items():
-                print(f"{stat_name}: {value:.4f}")
+
+     # Save statistics to a JSON file
+    output_filename = f"C:\\Dimitris\\MuscleInsight\\Data_Acquisition\\Rest_stats_for_Baseline_with_normalized_signal_json\\{os.path.basename(filepath).split('.')[0]}.json"
+    with open(output_filename, 'w') as json_file:
+        json.dump({
+            "input_file": filepath,
+            "window_size": window_size,
+            "step_size": step_size,
+            "statistical_analysis": stats
+        }, json_file, indent=4)
+    
+    print(f"Statistical analysis saved to {output_filename}")
 
     plt.show()
 
@@ -168,7 +169,7 @@ def calculate_statistics(metrics):
             }
             continue
             
-        normalized_values = normalize_array(values)
+        normalized_values = values
         if np.all(np.isnan(normalized_values)):
             stats[metric_name] = {
                 'mean': None,
