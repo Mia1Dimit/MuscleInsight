@@ -30,11 +30,11 @@ def process_signal_files():
    
     # Calculate mean of rest signal
     rest_signal = np.array(rest_data['signal'])
-    mean_rest = np.mean(rest_signal)
-   
+    rms_rest = np.sqrt(np.mean(rest_signal**2))
+
     # Normalize active signal by dividing by mean rest
     active_signal = np.array(active_data['signal'])
-    normalized_signal = active_signal // mean_rest
+    normalized_signal = active_signal // rms_rest
     
     num_samples_active = len(active_signal)
     time_active = np.arange(num_samples_active) / 800  # Time array for plotting
@@ -70,7 +70,7 @@ def process_signal_files():
     plt.show()
    
     # Print statistics
-    print(f"Mean of Rest Signal: {mean_rest}")
+    print(f"Mean of Rest Signal: {rms_rest}")
     print(f"Original Active Signal Mean: {np.mean(active_signal)}")
     print(f"Normalized Active Signal Mean: {np.mean(normalized_signal)}")
 
