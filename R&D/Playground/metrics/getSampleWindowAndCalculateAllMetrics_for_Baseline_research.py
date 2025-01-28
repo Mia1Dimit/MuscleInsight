@@ -29,25 +29,16 @@ def main():
 
     filepaths = open_dialog_and_select_multiple_files()
     data = []
-    rest_filepaths  = open_dialog_and_select_multiple_files()
-    rest_filepath = rest_filepaths[0]
-
-    # Read rest signal
-    with open(rest_filepath, 'r') as rest_file:
-        rest_data = json.load(rest_file)
-        rest_signal = np.array(rest_data['signal'])
-
 
     for filepath in filepaths:
         with open(filepath, "r") as json_file:
             newdata = json.load(json_file)
             data.extend(newdata["signal"])
-            
 
-    Fs              = INITIAL_RATE
-    input_signal    = np.array(data)/ np.sqrt(np.mean(rest_signal**2))
-    num_samples     = len(input_signal)
-    time            = np.arange(num_samples) / Fs  # Time array for plotting
+    Fs = INITIAL_RATE
+    input_signal = np.array(data)
+    num_samples = len(input_signal)
+    time = np.arange(num_samples) / Fs  # Time array for plotting
 
     num_windows = len(range(0, len(input_signal) - window_size, step_size))
     time_points = np.arange(num_windows) * (step_size / INITIAL_RATE)
@@ -57,7 +48,7 @@ def main():
     index_80 = min(range(len(frequencies)), key=lambda i: abs(frequencies[i] - 80))
     index_350 = min(range(len(frequencies)), key=lambda i: abs(frequencies[i] - 350))
 
-    m = {
+    m_active = {
         "mnf_arv_ratio": [],
         "ima_diff": [],
         "emd_mdf1": [],
@@ -65,54 +56,57 @@ def main():
         "fluct_variance": [],
         "fluct_range_values": [],
         "fluct_mean_diff_values": [],
-        "fluct_entropy_values": [],
-        "DOM": [],
-        "DFS": [],
-        "SOM": [],
-        "PSE": [],
+    }
+
+    # Compute mean of the first window
+    initial_window = input_signal[:window_size]
+    mean_initial_window = np.sqrt(np.mean(initial_window ** 2))
+    print("\nThe rms value of the first window is: ",mean_initial_window)
+
+    # Compute RMS values every 80 samples
+    rms_window_size = 400
+    rms_signal = [
+        np.sqrt(np.mean(input_signal[i:i + rms_window_size] ** 2))
+        for i in range(0, len(input_signal) - rms_window_size, rms_window_size)
+    ]
+
+    # Create corresponding time points for the RMS signal
+    rms_time_points = np.arange(len(rms_signal)) * (rms_window_size / Fs)
+
+
+
+    for idx in range(0, len(input_signal) - window_size, step_size):
+        segment = input_signal[idx:idx + window_size] / mean_initial_window
         
-    }   
-    
-    for idx in range(0,len(input_signal)-window_size,step_size):
-        segment = input_signal[idx:idx+window_size]
+        m_active["mnf_arv_ratio"].append(calc_mnf_arv_ratio(segment, Fs))
+        m_active["ima_diff"].append(calc_ima_diff(segment, index_25, index_80, index_350))
         
-        m["mnf_arv_ratio"].append(  calc_mnf_arv_ratio(segment, Fs))
+        mdf1, mdf2 = calc_emd_mdf1_2(segment, Fs)
+        m_active["emd_mdf1"].append(mdf1)
+        m_active["emd_mdf2"].append(mdf2)
         
-        m["ima_diff"].append(       calc_ima_diff(segment, index_25, index_80, index_350))
-        
-        mdf1,mdf2           =       calc_emd_mdf1_2(segment, Fs)
-        m["emd_mdf1"].append(mdf1)
-        m["emd_mdf2"].append(mdf2)
-        
-        sc_flct =                   calc_scaled_fluct_metrics(segment)
-        m["fluct_variance"].append(sc_flct[0])
-        m["fluct_range_values"].append(sc_flct[1])
-        m["fluct_mean_diff_values"].append(sc_flct[2])
-        # m["fluct_entropy_values"].append(sc_flct[3])
-        
-        # dom, dfs, som, pse =      alc_mfdma_metrics(segment)
-        # m["DOM"].append(dom)
-        # m["DFS"].append(dfs)
-        # m["SOM"].append(som)
-        # m["PSE"].append(pse)
+        sc_flct = calc_scaled_fluct_metrics(segment)
+        m_active["fluct_variance"].append(sc_flct[0])
+        m_active["fluct_range_values"].append(sc_flct[1])
+        m_active["fluct_mean_diff_values"].append(sc_flct[2])
 
     plt.figure(1)
-    plt.plot(time_points, normalize_array(m['mnf_arv_ratio']), label="mnf_arv_ratio" )
+    plt.plot(time_points, m_active['mnf_arv_ratio'], label="mnf_arv_ratio" )
     plt.title(f"{"Window size: ", window_size ," Step size: ", step_size}")
     plt.xlabel('Time (s)')
     plt.ylabel('mnf_arv_ratio')
     plt.grid()
 
     plt.figure(2)
-    plt.plot(time_points,  normalize_array(m['ima_diff']), label="ima_diff")
+    plt.plot(time_points,  m_active['ima_diff'], label="ima_diff")
     plt.title(f"{"Window size: ", window_size ," Step size: ", step_size}")
     plt.xlabel('Time (s)')
     plt.ylabel('ima_difference')
     plt.grid()
 
     plt.figure(3)
-    plt.plot(time_points,  normalize_array(m['emd_mdf1']), label="emd_mdf1")
-    plt.plot(time_points,  normalize_array(m['emd_mdf2']), label="emd_mdf2")
+    plt.plot(time_points,  m_active['emd_mdf1'], label="emd_mdf1")
+    plt.plot(time_points,  m_active['emd_mdf2'], label="emd_mdf2")
     plt.title(f"{"Window size: ", window_size ," Step size: ", step_size}")
     plt.legend()
     plt.xlabel('Time (s)')
@@ -120,15 +114,22 @@ def main():
     plt.grid()
 
     plt.figure(4)
-    plt.plot(time_points,  normalize_array(m['fluct_variance']), label="fluct_variance")
-    plt.plot(time_points,  normalize_array(m['fluct_range_values']),   label="fluct_range_values")
-    plt.plot(time_points,  normalize_array(m['fluct_mean_diff_values']), label="fluct_mean_diff_values")
+    plt.plot(time_points,  m_active['fluct_variance'], label="fluct_variance")
+    plt.plot(time_points,  m_active['fluct_range_values'],   label="fluct_range_values")
+    plt.plot(time_points,  m_active['fluct_mean_diff_values'], label="fluct_mean_diff_values")
     #plt.plot(time_points,  normalize_array(m['fluct_entropy_values']) , label="fluct_entropy_values")
     plt.title(f"{"Window size: ", window_size ," Step size: ", step_size}")
     plt.legend()
     plt.xlabel('Time (s)')
     plt.ylabel('Fluctuation metrics')
     plt.grid() 
+
+    plt.figure(5)
+    plt.plot(rms_time_points ,rms_signal,   label="Amplitudes")
+    plt.legend()
+    plt.xlabel('Time (s)')
+    plt.ylabel('Amplitudes')
+    plt.grid()
 
     # plt.figure(5)
     # plt.plot(m["DOM"])
@@ -142,10 +143,10 @@ def main():
     # add_computation_time(plt.gca(), computation_time/num_windows)
 
 
-    stats = calculate_statistics(m)
+    stats = calculate_statistics(m_active)
 
-     # Save statistics to a JSON file
-    output_filename = f"C:\\Dimitris\\MuscleInsight\\Data_Acquisition\\Rest_stats_for_Baseline_with_normalized_signal_json\\{os.path.basename(filepath).split('.')[0]}.json"
+    # Save statistics to a JSON file
+    """output_filename = f"C:\\Dimitris\\MuscleInsight\\Data_Acquisition\\Rest_stats_for_Baseline_with_normalized_signal_json\\{os.path.basename(filepath).split('.')[0]}.json"
     with open(output_filename, 'w') as json_file:
         json.dump({
             "input_file": filepath,
@@ -154,7 +155,7 @@ def main():
             "statistical_analysis": stats
         }, json_file, indent=4)
     
-    print(f"Statistical analysis saved to {output_filename}")
+    print(f"Statistical analysis saved to {output_filename}")"""
 
     plt.show()
 
