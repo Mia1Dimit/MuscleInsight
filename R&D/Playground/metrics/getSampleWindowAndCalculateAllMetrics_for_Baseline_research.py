@@ -63,7 +63,7 @@ def main():
     mean_initial_window = np.sqrt(np.mean(initial_window ** 2))
     print("\nThe rms value of the first window is: ",mean_initial_window)
 
-    # Compute RMS values every 80 samples
+    # Compute RMS values every x samples
     rms_window_size = 400
     rms_signal = [
         np.sqrt(np.mean(input_signal[i:i + rms_window_size] ** 2))
