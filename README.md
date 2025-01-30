@@ -20,7 +20,15 @@ Link to Electronics Special Issue details: https://www.mdpi.com/journal/electron
 
 ## 3. Baseline Research
 - [ ] Evaluate idle
-- [ ] Determine calibration needs (idle vs active)
+- [ ] Determine calibration needs (idle vs active):
+        - Check if for every person's 1st iteration these ratios are comparable
+            1. rms( active / (rest rms) )
+            2. metrics ( active / (rest rms) )
+            3. metrics(active) / metrics(rest)
+            4. rms ( active / (1stActiveWindow rms) )
+            5. metrics ( active / (1stActiveWindow rms) )
+            6. metrics(active) / metrics(1stActiveWindow)
+
 
 ## 4. Fatigue Analysis
 - [ ] Develop fatigue metric regression
