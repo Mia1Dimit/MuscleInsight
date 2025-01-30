@@ -15,8 +15,8 @@ Link to Electronics Special Issue details: https://www.mdpi.com/journal/electron
 ## 2. Window Size Analysis
 - [x] Document current window sizes and steps
 - [x] Analyze each metric calculation with different window sizes
-      -Window sizes -> 200, 400, 800, 1600
-      -Overlap (%) -> 25%, 50%, 75%, 87.5%
+      -Window sizes -> 200, 400, 800, 1600  
+      -Overlap (%) -> 25%, 50%, 75%, 87.5%  
 - [x] Create documentation comparing window sizes
       -Results: -Best performing window -> 800 with overlap as 75% or 87.5%
                -Best performing metrics ->
