@@ -58,10 +58,32 @@ def main():
         "fluct_mean_diff_values": [],
     }
 
+    m_initial_window = {
+        "mnf_arv_ratio": [],
+        "ima_diff": [],
+        "emd_mdf1": [],
+        "emd_mdf2": [],
+        "fluct_variance": [],
+        "fluct_range_values": [],
+        "fluct_mean_diff_values": [],
+    }
+
     # Compute mean of the first window
     initial_window = input_signal[:window_size]
     mean_initial_window = np.sqrt(np.mean(initial_window ** 2))
     print("\nThe rms value of the first window is: ",mean_initial_window)
+
+    m_initial_window["mnf_arv_ratio"].append(calc_mnf_arv_ratio(initial_window, Fs))
+    m_initial_window["ima_diff"].append(calc_ima_diff(initial_window, index_25, index_80, index_350))
+        
+    mdf1, mdf2 = calc_emd_mdf1_2(initial_window, Fs)
+    m_initial_window["emd_mdf1"].append(mdf1)
+    m_initial_window["emd_mdf2"].append(mdf2)
+        
+    sc_flct = calc_scaled_fluct_metrics(initial_window)
+    m_initial_window["fluct_variance"].append(sc_flct[0])
+    m_initial_window["fluct_range_values"].append(sc_flct[1])
+    m_initial_window["fluct_mean_diff_values"].append(sc_flct[2])
 
     # Compute RMS values every x samples
     rms_window_size = 400
@@ -76,7 +98,7 @@ def main():
 
 
     for idx in range(0, len(input_signal) - window_size, step_size):
-        segment = input_signal[idx:idx + window_size] / mean_initial_window
+        segment = input_signal[idx:idx + window_size] 
         
         m_active["mnf_arv_ratio"].append(calc_mnf_arv_ratio(segment, Fs))
         m_active["ima_diff"].append(calc_ima_diff(segment, index_25, index_80, index_350))
@@ -91,22 +113,22 @@ def main():
         m_active["fluct_mean_diff_values"].append(sc_flct[2])
 
     plt.figure(1)
-    plt.plot(time_points, m_active['mnf_arv_ratio'], label="mnf_arv_ratio" )
+    plt.plot(time_points, m_active['mnf_arv_ratio']/m_initial_window['mnf_arv_ratio'][0], label="mnf_arv_ratio" )
     plt.title(f"{"Window size: ", window_size ," Step size: ", step_size}")
     plt.xlabel('Time (s)')
     plt.ylabel('mnf_arv_ratio')
     plt.grid()
 
     plt.figure(2)
-    plt.plot(time_points,  m_active['ima_diff'], label="ima_diff")
+    plt.plot(time_points,  m_active['ima_diff']/m_initial_window['ima_diff'][0], label="ima_diff")
     plt.title(f"{"Window size: ", window_size ," Step size: ", step_size}")
     plt.xlabel('Time (s)')
     plt.ylabel('ima_difference')
     plt.grid()
 
     plt.figure(3)
-    plt.plot(time_points,  m_active['emd_mdf1'], label="emd_mdf1")
-    plt.plot(time_points,  m_active['emd_mdf2'], label="emd_mdf2")
+    plt.plot(time_points,  m_active['emd_mdf1']/m_initial_window['emd_mdf1'][0], label="emd_mdf1")
+    plt.plot(time_points,  m_active['emd_mdf2']/m_initial_window['emd_mdf2'][0], label="emd_mdf2")
     plt.title(f"{"Window size: ", window_size ," Step size: ", step_size}")
     plt.legend()
     plt.xlabel('Time (s)')
@@ -114,9 +136,9 @@ def main():
     plt.grid()
 
     plt.figure(4)
-    plt.plot(time_points,  m_active['fluct_variance'], label="fluct_variance")
-    plt.plot(time_points,  m_active['fluct_range_values'],   label="fluct_range_values")
-    plt.plot(time_points,  m_active['fluct_mean_diff_values'], label="fluct_mean_diff_values")
+    plt.plot(time_points,  m_active['fluct_variance']/m_initial_window['fluct_variance'][0], label="fluct_variance")
+    plt.plot(time_points,  m_active['fluct_range_values']/m_initial_window['fluct_range_values'][0],   label="fluct_range_values")
+    plt.plot(time_points,  m_active['fluct_mean_diff_values']/m_initial_window['fluct_mean_diff_values'][0], label="fluct_mean_diff_values")
     #plt.plot(time_points,  normalize_array(m['fluct_entropy_values']) , label="fluct_entropy_values")
     plt.title(f"{"Window size: ", window_size ," Step size: ", step_size}")
     plt.legend()
