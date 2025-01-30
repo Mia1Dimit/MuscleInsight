@@ -30,7 +30,7 @@ Link to Electronics Special Issue details: https://www.mdpi.com/journal/electron
       3. metrics(active) / metrics(rest) -> good for some metrics, variance in the values of mnf_arv_ratio and ima_diff<br>
       4. rms ( active / (1stActiveWindow rms) ) -> some variation among participants <br>
       5. metrics ( active / (1stActiveWindow rms) ) -> more or less stable behavior with the majority of the metrics following a standard range, with some exceptions <br>
-      6. metrics(active) / metrics(1stActiveWindow) -> <br>
+      6. metrics(active) / metrics(1stActiveWindow) ->  stable enough, weird behavior between emd1, emd2 (emd2 should have visibly lower values), unstable in fluctuation <br>
 
 
 ## 4. Fatigue Analysis
