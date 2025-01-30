@@ -15,22 +15,22 @@ Link to Electronics Special Issue details: https://www.mdpi.com/journal/electron
 ## 2. Window Size Analysis
 - [x] Document current window sizes and steps
 - [x] Analyze each metric calculation with different window sizes
-      -Window sizes -> 200, 400, 800, 1600     
-      -Overlap (%) -> 25%, 50%, 75%, 87.5%  
+      -Window sizes -> 200, 400, 800, 1600     <br>
+      -Overlap (%) -> 25%, 50%, 75%, 87.5%  <br>
 - [x] Create documentation comparing window sizes
-      -Results: -Best performing window -> 800 with overlap as 75% or 87.5%
-               -Best performing metrics ->
+      -Results: -Best performing window -> 800 with overlap as 75% or 87.5%<br>
+               -Best performing metrics -> mnf_arv_ratio, ima_diff <br>
 
 ## 3. Baseline Research
 - [x] Evaluate idle
 - [ ] Determine calibration needs (idle vs active)
-      Check if for every person's 1st iteration these ratios are comparable.
-      1. rms( active / (rest rms) ) -> different range of values among different participants
-      2. metrics ( active / (rest rms) ) -> as a result of 1. not an insightful way
-      3. metrics(active) / metrics(rest) -> good for some metrics, variance in the values of mnf_arv_ratio and ima_diff
-      4. rms ( active / (1stActiveWindow rms) ) -> some variation among participants 
-      5. metrics ( active / (1stActiveWindow rms) ) -> more or less stable behavior with the majority of the metrics following a standard range, with some exceptions 
-      6. metrics(active) / metrics(1stActiveWindow)
+      Check if for every person's 1st iteration these ratios are comparable.<br>
+      1. rms( active / (rest rms) ) -> different range of values among different participants<br>
+      2. metrics ( active / (rest rms) ) -> as a result of 1. not an insightful way<br>
+      3. metrics(active) / metrics(rest) -> good for some metrics, variance in the values of mnf_arv_ratio and ima_diff<br>
+      4. rms ( active / (1stActiveWindow rms) ) -> some variation among participants <br>
+      5. metrics ( active / (1stActiveWindow rms) ) -> more or less stable behavior with the majority of the metrics following a standard range, with some exceptions <br>
+      6. metrics(active) / metrics(1stActiveWindow)<br>
 
 
 ## 4. Fatigue Analysis
