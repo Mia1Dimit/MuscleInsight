@@ -24,7 +24,7 @@ Link to Electronics Special Issue details: https://www.mdpi.com/journal/electron
 
 ## 3. Baseline Research
 - [x] Evaluate idle
-- [ ] Determine calibration needs (idle vs active)<br>
+- [x] Determine calibration needs (idle vs active)<br>
       Check if for every person's 1st iteration these ratios are comparable.<br>
       1. rms( active / (rest rms) ) -> different range of values among different participants<br>
       2. metrics ( active / (rest rms) ) -> as a result of 1. not an insightful way<br>
