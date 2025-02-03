@@ -26,7 +26,10 @@ def select_and_plot_json():
 
     # Extract data from the JSON file
     try:
-        amplitudes = data["amplitudes"]
+        if 'signal' not in data.keys():
+            amplitudes = data["amplitudes"]
+        else:
+            amplitudes = data["signal"]
         sampling_rate = 800  # Hz
         time = np.arange(len(amplitudes)) / sampling_rate
 

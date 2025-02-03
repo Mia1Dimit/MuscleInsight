@@ -20,8 +20,8 @@ from PyEMD import EMD, EEMD
 
 INITIAL_RATE = 800.0
 
-window_size = 400*1
-step_size = window_size//4
+window_size = 800*1
+step_size = window_size//2
 
 #############################
 
@@ -92,13 +92,20 @@ def main():
         # m["PSE"].append(pse)
     
     plt.figure()
-    plt.plot( (m["mnf_arv_ratio"]-min(m["mnf_arv_ratio"]))/max(m["mnf_arv_ratio"]), label="mnf_arv_ratio" )
-    plt.plot((m["ima_diff"]-min(m["ima_diff"]))/max(m["ima_diff"]), label="ima_diff")
-    plt.plot((m["emd_mdf1"]-min(m["emd_mdf1"]))/max(m["emd_mdf1"]), label="emd_mdf1")
-    plt.plot((m["emd_mdf2"]-min(m["emd_mdf2"]))/max(m["emd_mdf2"]), label="emd_mdf2")
-    plt.plot((m["fluct_variance"]-min(m["fluct_variance"]))/max(m["fluct_variance"]), label="fluct_variance")
-    plt.plot((m["fluct_range_values"]-min(m["fluct_range_values"]))/max(m["fluct_range_values"]),   label="fluct_range_values")
-    plt.plot((m["fluct_mean_diff_values"]-min(m["fluct_mean_diff_values"]))/max(m["fluct_mean_diff_values"]), label="fluct_mean_diff_values")
+    plt.plot(m["mnf_arv_ratio"], label="mnf_arv_ratio" )
+    plt.legend()
+    plt.figure()
+    plt.plot(m["ima_diff"], label="ima_diff")
+    plt.legend()
+    plt.figure()
+    plt.plot(m["emd_mdf1"], label="emd_mdf1")
+    plt.plot(m["emd_mdf2"], label="emd_mdf2")
+    plt.legend()
+    plt.figure()
+    plt.plot(m["fluct_variance"], label="fluct_variance")
+    plt.plot(m["fluct_range_values"],   label="fluct_range_values")
+    plt.plot(m["fluct_mean_diff_values"], label="fluct_mean_diff_values")
+    plt.legend()
     # plt.plot((m["fluct_entropy_values"]-min(m["fluct_entropy_values"]))/max(m["fluct_entropy_values"]) , label="fluct_entropy_values")
     # plt.plot(m["DOM"])
     # plt.plot(m["DFS"])
