@@ -22,6 +22,11 @@ import scipy.signal as signal
 
 def main():
 
+    weightedsum = np.array([])
+    indexcalc = np.array([])
+    pca = np.array([])
+    tsne = np.array([])
+    
     filepaths = open_dialog_and_select_multiple_files()
     for filepath in filepaths:
         with open(filepath, "r") as json_file:
@@ -33,7 +38,7 @@ def main():
         m.pop('person')
 
         fs = 4
-        cutoff = 0.08  # Cutoff frequency in Hz
+        cutoff = 0.2#0.08  # Cutoff frequency in Hz
         order = 2    # Filter order
         normal_cutoff = cutoff/ (fs / 2)
         b, a = signal.butter(order, normal_cutoff, btype='low', analog=False)
@@ -81,11 +86,9 @@ def main():
 
         
 
-        fig2, axs2 = plt.subplots(4, 1, figsize=(8, 9))
-        plt.title(f"{filepath.split('/')[-1].split('_ID')[0]}")
-        plt.tight_layout()
+        
 
-        weightedsum = signal.filtfilt(b, a, weighted_sum_fatigue(m))
+        weightedsum = np.concatenate([weightedsum,weighted_sum_fatigue(m)])
         # plot_fatigue(fatigue1, "Weighted Sum Fatigue")
 
 
@@ -93,29 +96,31 @@ def main():
         fatigue_index = calculator.calculate_fatigue_index(m)
         contributions = calculator.get_metric_contribution(m)
         print(contributions)
-        indexcalc = signal.filtfilt(b, a, fatigue_index)
+        indexcalc = np.concatenate([indexcalc,fatigue_index])
 
 
         learner = FatigueLearner(m)
-        pca = signal.filtfilt(b, a, learner.extract_fatigue_indicator(method='pca'))
-        tsne = signal.filtfilt(b, a, learner.extract_fatigue_indicator(method='tsne'))
+        pca = np.concatenate([pca, learner.extract_fatigue_indicator(method='pca')])
+        tsne = np.concatenate([tsne, learner.extract_fatigue_indicator(method='tsne')])
 
-        axs2[0].plot(weightedsum, label='weightedsum')
-        axs2[0].legend()
-        axs2[0].grid()
-        axs2[1].plot(indexcalc, label='indexcalc')
-        axs2[1].legend()
-        axs2[1].grid()
-        axs2[2].plot(pca, label='pca')
-        axs2[2].legend()
-        axs2[2].grid()
-        axs2[3].plot(tsne, label='tsne')
-        axs2[3].legend()
-        axs2[3].grid()
+    fig2, axs2 = plt.subplots(4, 1, figsize=(8, 9))
+    plt.title(f"{filepath.split('/')[-1].split('_ID')[0]}")
+    plt.tight_layout()
+
+    axs2[0].plot(signal.filtfilt(b, a, weightedsum), label='weightedsum')
+    axs2[0].legend()
+    axs2[0].grid()
+    axs2[1].plot(signal.filtfilt(b, a, indexcalc), label='indexcalc')
+    axs2[1].legend()
+    axs2[1].grid()
+    axs2[2].plot(signal.filtfilt(b, a, pca), label='pca')
+    axs2[2].legend()
+    axs2[2].grid()
+    axs2[3].plot(signal.filtfilt(b, a, tsne), label='tsne')
+    axs2[3].legend()
+    axs2[3].grid()
 
     plt.show()
-    
-    
     
 
 
@@ -361,7 +366,7 @@ def weighted_sum_fatigue(m, weights=None):
     if weights is None:
         weights = np.ones(metrics.shape[0])  # Equal weights if none provided
     fatigue = np.dot(weights, metrics)  # Weighted sum
-    return fatigue.tolist()
+    return np.array(fatigue)
 
 def kmeans_fatigue(m, n_clusters=100):
     """K-Means clustering method."""
