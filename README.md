@@ -7,6 +7,9 @@ The "Muscle Insight" project is dedicated to advancing the understanding and mon
 
 Link to Electronics Special Issue details: https://www.mdpi.com/journal/electronics/special_issues/Wireless_Sensor_Network
 
+Link to Overleaf Project:
+https://www.overleaf.com/4219964889njyzqnjgshyd#8198bc 
+
 # Project Timeline & Tasks
 
 ## 1. Initial Setup & Validation
