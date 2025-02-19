@@ -10,6 +10,8 @@ Link to Electronics Special Issue details: https://www.mdpi.com/journal/electron
 Link to Overleaf Project:
 https://www.overleaf.com/4219964889njyzqnjgshyd#8198bc 
 
+Link to google docs: https://docs.google.com/document/d/1ecHfYun13XQoTQhuICtWPRKvC5i2IAHv-5Wr92j8-4Q/edit?usp=sharing
+
 # Project Timeline & Tasks
 
 ## 1. Initial Setup & Validation
