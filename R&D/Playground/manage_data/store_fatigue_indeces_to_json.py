@@ -1,5 +1,8 @@
 """
-
+Import the exported metrics from multiple JSON files,
+produce the 4 fatigue indeces from each selected person,
+lowpass filter each person alone,
+store in json, each person alone.
 """
 
 import numpy as np
@@ -19,14 +22,10 @@ import scipy.signal as signal
 
 
 
+avg_firsts_for_filter_size = 10
 
 def main():
 
-    weightedsum = np.array([])
-    indexcalc = np.array([])
-    pca = np.array([])
-    tsne = np.array([])
-    
     filepaths = open_dialog_and_select_multiple_files()
     for filepath in filepaths:
         with open(filepath, "r") as json_file:
@@ -35,92 +34,59 @@ def main():
         m['mnf_arv_ratio'] = -np.array(m['mnf_arv_ratio'])
         m['emd_mdf1'] = -np.array(m['emd_mdf1'])
         m['emd_mdf2'] = -np.array(m['emd_mdf2'])
+        person = m['person']
         m.pop('person')
 
+
         fs = 4
-        cutoff = 0.2#0.08  # Cutoff frequency in Hz
+        cutoff = 0.08  # Cutoff frequency in Hz
         order = 2    # Filter order
         normal_cutoff = cutoff/ (fs / 2)
         b, a = signal.butter(order, normal_cutoff, btype='low', analog=False)
         
 
-        baseMetrics = {
-            'rms': m['rms'][0],
-            "mnf_arv_ratio": m['mnf_arv_ratio'][0],
-            "ima_diff": m['ima_diff'][0],
-            "emd_mdf1": m['emd_mdf1'][0],
-            "emd_mdf2": m['emd_mdf2'][0],
-            "fluct_variance": m['fluct_variance'][0],
-            "fluct_range_values": m['fluct_range_values'][0],
-            "fluct_mean_diff_values": m['fluct_mean_diff_values'][0]
-        }
-
-
-        # fig, axs = plt.subplots(3, 2, figsize=(10, 10))
-        # plt.title(f"{filepaths[0].split('/')[-1].split('_ID')[0]}")
-        # axs[0, 0].plot(m["rms"], label="rms")
-        # axs[0, 0].legend()
-        # axs[0, 0].grid()
-        
-        # axs[0, 1].plot(m["emd_mdf1"], label="emd_mdf1")
-        # axs[0, 1].plot(m["emd_mdf2"], label="emd_mdf2")
-        # axs[0, 1].legend()
-        # axs[0, 1].grid()
-        
-        # axs[1, 0].plot(m["mnf_arv_ratio"], label="mnf_arv_ratio")
-        # axs[1, 0].legend()
-        # axs[1, 0].grid()
-        
-        # axs[1, 1].plot(m["ima_diff"], label="ima_diff")
-        # axs[1, 1].legend()
-        # axs[1, 1].grid()
-        
-        # axs[2, 0].plot(m["fluct_variance"], label="fluct_variance")
-        # axs[2, 0].plot(m["fluct_range_values"],   label="fluct_range_values")
-        # axs[2, 0].plot(m["fluct_mean_diff_values"], label="fluct_mean_diff_values")
-        # axs[2, 0].legend()
-        # axs[2, 0].grid()
-
-        # fig.delaxes(axs[2, 1])
-        # plt.tight_layout()
-
         
 
-        
+        fig2, axs2 = plt.subplots(4, 1, figsize=(8, 9))
+        plt.title(f"{filepath.split('/')[-1].split('_ID')[0]}")
+        plt.tight_layout()
 
-        weightedsum = np.concatenate([weightedsum,weighted_sum_fatigue(m)])
-        # plot_fatigue(fatigue1, "Weighted Sum Fatigue")
+        weightedsum = signal.filtfilt(b, a, weighted_sum_fatigue(m))
 
 
         calculator = FatigueIndexCalculator()
         fatigue_index = calculator.calculate_fatigue_index(m)
         contributions = calculator.get_metric_contribution(m)
         print(contributions)
-        indexcalc = np.concatenate([indexcalc,fatigue_index])
+        indexcalc = signal.filtfilt(b, a, fatigue_index)
 
 
         learner = FatigueLearner(m)
-        pca = np.concatenate([pca, learner.extract_fatigue_indicator(method='pca')])
-        tsne = np.concatenate([tsne, learner.extract_fatigue_indicator(method='tsne')])
+        pca = signal.filtfilt(b, a, learner.extract_fatigue_indicator(method='pca'))
+        tsne = signal.filtfilt(b, a, learner.extract_fatigue_indicator(method='tsne'))
 
-    fig2, axs2 = plt.subplots(4, 1, figsize=(8, 9))
-    plt.title(f"{filepath.split('/')[-1].split('_ID')[0]}")
-    plt.tight_layout()
 
-    axs2[0].plot(signal.filtfilt(b, a, weightedsum), label='weightedsum')
-    axs2[0].legend()
-    axs2[0].grid()
-    axs2[1].plot(signal.filtfilt(b, a, indexcalc), label='indexcalc')
-    axs2[1].legend()
-    axs2[1].grid()
-    axs2[2].plot(signal.filtfilt(b, a, pca), label='pca')
-    axs2[2].legend()
-    axs2[2].grid()
-    axs2[3].plot(signal.filtfilt(b, a, tsne), label='tsne')
-    axs2[3].legend()
-    axs2[3].grid()
 
-    plt.show()
+        output = {
+            'person': person,
+            'weightedsum_filt': weightedsum.tolist(),
+            'weightedsum_unfilt': weighted_sum_fatigue(m),
+            'indexcalc_filt': indexcalc.tolist(),
+            'indexcalc_unfilt': fatigue_index.tolist(),
+            'pca_filt': pca.tolist(),
+            'pca_unfilt': learner.extract_fatigue_indicator(method='pca').tolist(),
+            'tsne_filt': tsne.tolist(),
+            'tsne_unfilt': learner.extract_fatigue_indicator(method='tsne').tolist()
+        }
+        outputname = filepath.split("_metr")[0]+"_fatigue.json"
+        print(outputname)
+
+        # Save to a JSON file
+        with open(outputname, "w") as json_file:
+            json.dump(output, json_file, indent=4)  # indent=4 makes it more readable
+
+    
+    
     
 
 
@@ -211,7 +177,9 @@ class FatigueLearner:
         if method == 'pca':
             pca_result, variance_ratio = self.pca_analysis(n_components=num)
             # Use first principal component as fatigue indicator
-            return pca_result[:, 0]
+            fatigue = pca_result[:, 0]
+            fatigue[0] = np.mean(fatigue[:avg_firsts_for_filter_size])
+            return fatigue
         
         elif method == 'kmeans':
             labels, centers = self.kmeans_clustering()
@@ -221,7 +189,9 @@ class FatigueLearner:
         elif method == 'tsne':
             tsne_result = self.tsne_visualization()
             # Use first dimension of t-SNE as potential fatigue indicator
-            return tsne_result[:, 0]
+            fatigue = tsne_result[:, 0]
+            fatigue[0] = np.mean(fatigue[:avg_firsts_for_filter_size])
+            return fatigue
         
         else:
             raise ValueError("Invalid method. Choose 'pca', 'kmeans', or 'tsne'.")
@@ -322,6 +292,7 @@ class FatigueIndexCalculator:
             kernel = np.ones(window_size) / window_size
             fatigue_index = np.convolve(fatigue_index, kernel, mode='same')
         
+        fatigue_index[0] = np.mean(fatigue_index[:avg_firsts_for_filter_size])
         return fatigue_index
     
     def set_metric_weights(self, weights_dict):
@@ -366,7 +337,8 @@ def weighted_sum_fatigue(m, weights=None):
     if weights is None:
         weights = np.ones(metrics.shape[0])  # Equal weights if none provided
     fatigue = np.dot(weights, metrics)  # Weighted sum
-    return np.array(fatigue)
+    fatigue[0] = np.mean(fatigue[:avg_firsts_for_filter_size])
+    return fatigue.tolist()
 
 def kmeans_fatigue(m, n_clusters=100):
     """K-Means clustering method."""

@@ -1,5 +1,8 @@
 """
-
+Import the exported metrics from multiple JSON files,
+produce the 4 fatigue indeces from each selected person,
+lowpass filter each person alone,
+plot each person alone.
 """
 
 import numpy as np
@@ -19,6 +22,7 @@ import scipy.signal as signal
 
 
 
+avg_firsts_for_filter_size = 10
 
 def main():
 
@@ -31,6 +35,8 @@ def main():
         m['emd_mdf1'] = -np.array(m['emd_mdf1'])
         m['emd_mdf2'] = -np.array(m['emd_mdf2'])
         m.pop('person')
+
+        plot_with_unfiltered = True
 
         fs = 4
         cutoff = 0.08  # Cutoff frequency in Hz
@@ -99,6 +105,12 @@ def main():
         learner = FatigueLearner(m)
         pca = signal.filtfilt(b, a, learner.extract_fatigue_indicator(method='pca'))
         tsne = signal.filtfilt(b, a, learner.extract_fatigue_indicator(method='tsne'))
+
+        if plot_with_unfiltered:
+            axs2[0].plot(weighted_sum_fatigue(m))
+            axs2[1].plot(fatigue_index)
+            axs2[2].plot(learner.extract_fatigue_indicator(method='pca'))
+            axs2[3].plot(learner.extract_fatigue_indicator(method='tsne'))
 
         axs2[0].plot(weightedsum, label='weightedsum')
         axs2[0].legend()
@@ -206,7 +218,9 @@ class FatigueLearner:
         if method == 'pca':
             pca_result, variance_ratio = self.pca_analysis(n_components=num)
             # Use first principal component as fatigue indicator
-            return pca_result[:, 0]
+            fatigue = pca_result[:, 0]
+            fatigue[0] = np.mean(fatigue[:avg_firsts_for_filter_size])
+            return fatigue
         
         elif method == 'kmeans':
             labels, centers = self.kmeans_clustering()
@@ -216,7 +230,9 @@ class FatigueLearner:
         elif method == 'tsne':
             tsne_result = self.tsne_visualization()
             # Use first dimension of t-SNE as potential fatigue indicator
-            return tsne_result[:, 0]
+            fatigue = tsne_result[:, 0]
+            fatigue[0] = np.mean(fatigue[:avg_firsts_for_filter_size])
+            return fatigue
         
         else:
             raise ValueError("Invalid method. Choose 'pca', 'kmeans', or 'tsne'.")
@@ -317,6 +333,7 @@ class FatigueIndexCalculator:
             kernel = np.ones(window_size) / window_size
             fatigue_index = np.convolve(fatigue_index, kernel, mode='same')
         
+        fatigue_index[0] = np.mean(fatigue_index[:avg_firsts_for_filter_size])
         return fatigue_index
     
     def set_metric_weights(self, weights_dict):
@@ -361,6 +378,7 @@ def weighted_sum_fatigue(m, weights=None):
     if weights is None:
         weights = np.ones(metrics.shape[0])  # Equal weights if none provided
     fatigue = np.dot(weights, metrics)  # Weighted sum
+    fatigue[0] = np.mean(fatigue[:avg_firsts_for_filter_size])
     return fatigue.tolist()
 
 def kmeans_fatigue(m, n_clusters=100):
