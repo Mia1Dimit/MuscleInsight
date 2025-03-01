@@ -30,6 +30,7 @@ def main():
     indexcalc = np.array([])
     pca = np.array([])
     tsne = np.array([])
+    sep_line_ind = []
     
     filepaths = open_dialog_and_select_multiple_files()
     for filepath in filepaths:
@@ -52,7 +53,7 @@ def main():
         #1
         temp_ws = signal.filtfilt(b, a, weighted_sum_fatigue(m))
         weightedsum = np.concatenate([weightedsum, temp_ws])
-
+        
         
         #2
         calculator = FatigueIndexCalculator()
@@ -67,21 +68,34 @@ def main():
         pca = np.concatenate([pca, signal.filtfilt(b, a, learner.extract_fatigue_indicator(method='pca'))])
         tsne = np.concatenate([tsne, signal.filtfilt(b, a, learner.extract_fatigue_indicator(method='tsne'))])
 
+        sep_line_ind.append(len(weightedsum))
+
 
     fig2, axs2 = plt.subplots(4, 1, figsize=(8, 9))
     plt.title(f"{filepath.split('/')[-1].split('_ID')[0]}")
     plt.tight_layout()
 
     axs2[0].plot(weightedsum, label='weightedsum')
+    for idx in sep_line_ind:
+        axs2[0].axvline(x=idx, color='red', linestyle='--', linewidth=1)
     axs2[0].legend()
     axs2[0].grid()
+    
     axs2[1].plot(indexcalc, label='indexcalc')
+    for idx in sep_line_ind:
+        axs2[1].axvline(x=idx, color='red', linestyle='--', linewidth=1)
     axs2[1].legend()
     axs2[1].grid()
+    
     axs2[2].plot(pca, label='pca')
+    for idx in sep_line_ind:
+        axs2[2].axvline(x=idx, color='red', linestyle='--', linewidth=1)
     axs2[2].legend()
     axs2[2].grid()
+    
     axs2[3].plot(tsne, label='tsne')
+    for idx in sep_line_ind:
+        axs2[3].axvline(x=idx, color='red', linestyle='--', linewidth=1)
     axs2[3].legend()
     axs2[3].grid()
 
