@@ -24,8 +24,8 @@ from scipy import signal
 INITIAL_RATE = 800.0
 
 # Define multiple window sizes and step sizes to test
-WINDOW_SIZES = [200,400,800,1600]  # in samples
-STEP_SIZES_RATIOS = [3/4, 1/2, 1/4, 1/8]   # as fraction of window size
+WINDOW_SIZES = [1600]  # in samples
+STEP_SIZES_RATIOS = [1/4]   # as fraction of window size
 
 # Directory to save plots
 SAVE_DIR = r"C:\\Dimitris\\MuscleInsight\\R&D\\Plots\\plots_Window_Analysis_Results\\Active_marios_ID1"
