@@ -89,6 +89,19 @@ def main():
         print(f"Error loading expected output: {e}")
         return
     
+    # plt.figure(figsize=(12, 8))
+    # plt.plot(np.array(X).transpose()[0])
+    # plt.plot(np.array(X).transpose()[1])
+    # plt.plot(np.array(X).transpose()[2])
+    # plt.plot(np.array(X).transpose()[3])
+    # plt.plot(np.array(X).transpose()[4])
+    # plt.plot(np.array(X).transpose()[5])
+    # plt.plot(np.array(X).transpose()[6])
+    # plt.plot(y_true)
+    # plt.show()
+    # print(X.shape)
+    # print(y_true.shape)
+    
     # Make predictions
     try:
         y_pred = model.predict(X)
@@ -120,8 +133,10 @@ def main():
     
     # Plot 1: Predicted vs Expected
     plt.subplot(2, 1, 1)
-    plt.scatter(range(len(y_true)), y_true, label='Expected', alpha=0.7, s=20)
-    plt.scatter(range(len(y_pred)), y_pred, label='Predicted', alpha=0.7, s=20)
+    # plt.scatter(range(len(y_true)), y_true, label='Expected', alpha=0.7, s=20)
+    # plt.scatter(range(len(y_pred)), y_pred, label='Predicted', alpha=0.7, s=20)
+    plt.plot(range(len(y_true)), y_true, label='Expected')
+    plt.plot(range(len(y_pred)), y_pred, label='Predicted')
     plt.title(f'Model Prediction vs Expected Output - R²: {r2:.4f}')
     plt.xlabel('Sample Index')
     plt.ylabel('Value')

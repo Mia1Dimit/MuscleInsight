@@ -3,7 +3,9 @@ import pandas as pd
 import json
 import tkinter as tk
 from tkinter import filedialog
-import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('TkAgg')
+from matplotlib import pyplot as plt
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split, GridSearchCV, RandomizedSearchCV
 from sklearn.metrics import mean_squared_error, r2_score
@@ -139,6 +141,11 @@ def train_linear_model():
         
         # Make predictions
         y_pred = model.predict(X_test_scaled)
+        plt.figure()
+        plt.plot(y_test)
+        plt.plot(y_pred)
+        plt.show()
+        plt.close()
         
         # Evaluate
         mse, r2 = evaluate_model(y_test, y_pred, f"{name} Regression")
@@ -196,6 +203,12 @@ def train_svr_model():
     # Make predictions
     y_pred = svr_model.predict(X_test_scaled)
     
+    plt.figure()
+    plt.plot(y_test)
+    plt.plot(y_pred)
+    plt.show()
+    plt.close()
+    
     # Evaluate
     evaluate_model(y_test, y_pred, "Support Vector Regression")
     
@@ -234,6 +247,11 @@ def train_random_forest_model():
     
     # Make predictions
     y_pred = rf_model.predict(X_test_scaled)
+    plt.figure()
+    plt.plot(y_test)
+    plt.plot(y_pred)
+    plt.show()
+    plt.close()
     
     # Evaluate
     evaluate_model(y_test, y_pred, "Random Forest Regression")
@@ -306,6 +324,10 @@ def train_lstm_model():
     
     # Make predictions
     y_pred = model.predict(X_test_lstm).flatten()
+    plt.figure()
+    plt.plot(y_test)
+    plt.plot(y_pred)
+    plt.show()
     
     # Evaluate
     evaluate_model(y_test, y_pred, "LSTM Neural Network")
@@ -564,7 +586,7 @@ if __name__ == "__main__":
     
     # Train all models
     linear_model, linear_name = train_linear_model()
-    svr_model = train_svr_model()
+    # svr_model = train_svr_model()
     rf_model = train_random_forest_model()
     lstm_model = train_lstm_model()
     gbm_model = train_gbm_model()
@@ -580,9 +602,9 @@ if __name__ == "__main__":
     results[linear_name] = {"mse": mse, "r2": r2}
     
     # SVR
-    y_pred = svr_model.predict(X_test_scaled)
-    mse, r2 = evaluate_model(y_test, y_pred, "SVR")
-    results["SVR"] = {"mse": mse, "r2": r2}
+    # y_pred = svr_model.predict(X_test_scaled)
+    # mse, r2 = evaluate_model(y_test, y_pred, "SVR")
+    # results["SVR"] = {"mse": mse, "r2": r2}
     
     # Random Forest
     y_pred = rf_model.predict(X_test_scaled)
