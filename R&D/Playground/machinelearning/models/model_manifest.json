@@ -1,8 +1,0 @@
-{
-    "linear": "C:\\Users\\John Stivaros\\Documents\\PersonalProjects\\MuscleInsight\\MuscleInsight\\R&D\\Playground\\machinelearning\\models\\linear.joblib",
-    "random_forest": "C:\\Users\\John Stivaros\\Documents\\PersonalProjects\\MuscleInsight\\MuscleInsight\\R&D\\Playground\\machinelearning\\models\\random_forest.joblib",
-    "lstm": "C:\\Users\\John Stivaros\\Documents\\PersonalProjects\\MuscleInsight\\MuscleInsight\\R&D\\Playground\\machinelearning\\models\\lstm.joblib",
-    "gbm": "C:\\Users\\John Stivaros\\Documents\\PersonalProjects\\MuscleInsight\\MuscleInsight\\R&D\\Playground\\machinelearning\\models\\gbm.joblib",
-    "cnn": "C:\\Users\\John Stivaros\\Documents\\PersonalProjects\\MuscleInsight\\MuscleInsight\\R&D\\Playground\\machinelearning\\models\\cnn.joblib",
-    "knn": "C:\\Users\\John Stivaros\\Documents\\PersonalProjects\\MuscleInsight\\MuscleInsight\\R&D\\Playground\\machinelearning\\models\\knn.joblib"
-}

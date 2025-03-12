@@ -168,7 +168,7 @@ else:
 
 
 # Split data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.01, random_state=42)
 
 # Scale features
 scaler = StandardScaler()
@@ -691,7 +691,7 @@ if __name__ == "__main__":
     
     # Train all models
     linear_model, linear_name = train_linear_model()
-    svr_model = train_svr_model()
+    # svr_model = train_svr_model()
     rf_model = train_random_forest_model()
     lstm_model = train_lstm_model()
     gbm_model = train_gbm_model()
@@ -700,7 +700,7 @@ if __name__ == "__main__":
     
     models = {
         "linear": linear_model,
-        "svr": svr_model,
+        # "svr": svr_model,
         "random_forest": rf_model,
         "lstm": lstm_model,
         "gbm": gbm_model,
@@ -709,7 +709,7 @@ if __name__ == "__main__":
     }
 
     # Save all models at once
-    save_models(models, )
+    save_models(models, modelsFolder)
     
     # Collect results for comparison
     results = {}
@@ -720,9 +720,9 @@ if __name__ == "__main__":
     results[linear_name] = {"mse": mse, "r2": r2}
     
     # SVR
-    y_pred = svr_model.predict(X_test_scaled)
-    mse, r2 = evaluate_model(y_test, y_pred, "SVR")
-    results["SVR"] = {"mse": mse, "r2": r2}
+    # y_pred = svr_model.predict(X_test_scaled)
+    # mse, r2 = evaluate_model(y_test, y_pred, "SVR")
+    # results["SVR"] = {"mse": mse, "r2": r2}
     
     # Random Forest
     y_pred = rf_model.predict(X_test_scaled)
