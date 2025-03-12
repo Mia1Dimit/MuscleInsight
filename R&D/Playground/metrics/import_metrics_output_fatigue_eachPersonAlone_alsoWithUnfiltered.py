@@ -84,7 +84,7 @@ def main():
 
         # fig.delaxes(axs[2, 1])
         # plt.tight_layout()
-
+        
         
 
         fig2, axs2 = plt.subplots(4, 1, figsize=(8, 9))
