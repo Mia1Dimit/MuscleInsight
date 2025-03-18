@@ -40,16 +40,16 @@ Link to google docs: https://docs.google.com/document/d/1ecHfYun13XQoTQhuICtWPRK
 
 
 ## 4. Fatigue Analysis
-- [ ] Develop fatigue metric regression
-- [ ] Train
-- [ ] Evaluation
+- [x] Develop fatigue metric regression
+- [x] Train
+- [x] Evaluation
       
 ## 5. Algorithm Implementation
-- [ ] Develop calibration code
-- [ ] Implement complete algorithm
+- [x] Develop calibration code
+- [x] Implement complete algorithm
 
 ## 6. Arduino BLE Communication
-- [ ] Define BLE data transmission logic
+- [x] Define BLE data transmission logic
 
 
 ## Paper Title:
@@ -59,4 +59,4 @@ Developing a Novel Muscle Fatigue Index for Wireless sEMG Sensors: Metrics and R
 
 ## Paper Abstract:
 
-Muscle fatigue impacts performance in sports, rehabilitation, and daily activities, with surface electromyography (sEMG) widely used for monitoring. In this study, we analyzed sEMG signals, evaluating time, frequency, and combined-domain metrics to identify reliable fatigue indicators. Using these metrics, we developed a novel fatigue index through regression modeling, capturing fatigue progression and enabling personalized muscle-specific assessment. Integrated into a wireless BLE-enabled sensor platform, the system combines seamless body placement, mobility, and real-time data transmission. An initial calibration phase ensures adaptation to individual muscle profiles, enhancing accuracy. By balancing on-device processing with efficient wireless communication, this platform delivers scalable, real-time fatigue monitoring across diverse applications.
+Muscle fatigue impacts performance in sports, rehabilitation, and daily activities, with surface electromyography (sEMG) widely used for monitoring. In this study, we developed a wearable sEMG device and conducted experiments to create a dataset for fatigue analysis. We analyzed sEMG signals by evaluating time, frequency, and combined-domain metrics to identify reliable fatigue indicators. To ensure consistency across data sources, we applied a standardization process, calibrating signal-derived metrics to a common scale dynamically. Using these standardized metrics, we explored different methods to derive a fatigue index, through feature extraction and dimensionality reduction, assessing their effectiveness in capturing fatigue progression. We then trained and evaluated multiple machine learning models to predict fatigue levels, selecting the most effective approach for real-time monitoring. Integrated into a wireless BLE-enabled sensor platform, the system offers seamless body placement, mobility, and efficient data transmission. An initial calibration phase ensures adaptation to individual muscle profiles, enhancing accuracy. By balancing on-device processing with efficient wireless communication, this platform delivers scalable, real-time fatigue monitoring across diverse applications.
