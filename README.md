@@ -40,16 +40,16 @@ Link to google docs: https://docs.google.com/document/d/1ecHfYun13XQoTQhuICtWPRK
 
 
 ## 4. Fatigue Analysis
-- [ ] Develop fatigue metric regression
-- [ ] Train
-- [ ] Evaluation
+- [x] Develop fatigue metric regression
+- [x] Train
+- [x] Evaluation
       
 ## 5. Algorithm Implementation
-- [ ] Develop calibration code
-- [ ] Implement complete algorithm
+- [x] Develop calibration code
+- [x] Implement complete algorithm
 
 ## 6. Arduino BLE Communication
-- [ ] Define BLE data transmission logic
+- [x] Define BLE data transmission logic
 
 
 ## Paper Title:

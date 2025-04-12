@@ -21,6 +21,22 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
+
+home = False
+
+
+if home == True:
+    resultsFolderPath = "C:/Users/John Stivaros/Documents/PersonalProjects/MuscleInsight/MuscleInsight/R&D/Playground/machinelearning/results/"
+    modelsFolder = "C:\\Users\\John Stivaros\\Documents\\PersonalProjects\\MuscleInsight\\MuscleInsight\\R&D\\Playground\\machinelearning\\models\\"
+else:
+    resultsFolderPath = "C:\\Users\\jstivaros\\Documents\\MuscleInsight\\MuscleInsight\\R&D\\Playground\\machinelearning\\results"
+    modelsFolder = "C:\\Users\\jstivaros\\Documents\\MuscleInsight\\MuscleInsight\\R&D\\Playground\\machinelearning\\models\\"
+
+
+
+
+
+
 def choose_multiple_json_files():
     root = tk.Tk()
     root.withdraw()  # Hide the main window
@@ -58,7 +74,7 @@ def choose_multiple_json_files():
     
     # Get base names for the subject name
     # base_names = [os.path.splitext(os.path.basename(file))[0] for file in input_files]
-    subject_name = "C:/Users/John Stivaros/Documents/PersonalProjects/MuscleInsight/MuscleInsight/R&D/Playground/machinelearning/results/"
+    subject_name = resultsFolderPath 
     
     # Ask for multiple output JSON files
     output_files = filedialog.askopenfilenames(
@@ -173,15 +189,15 @@ def evaluate_model(y_true, y_pred, model_name):
     print(f"{model_name} - Mean Squared Error: {mse:.4f}")
     print(f"{model_name} - R² Score: {r2:.4f}")
     
-    # plt.figure(figsize=(8, 6))
-    # plt.scatter(y_true, y_pred, alpha=0.7)
-    # plt.plot([min(y_true), max(y_true)], [min(y_true), max(y_true)], 'r--')
-    # plt.xlabel('Actual Fatigue')
-    # plt.ylabel('Predicted Fatigue')
-    # plt.title(f'{model_name}: Actual vs Predicted Fatigue')
-    # plt.grid(True)
-    # plt.savefig(subjectName+f"{model_name.lower().replace(' ', '_')}_results.png")
-    # plt.close()
+    plt.figure(figsize=(8, 6))
+    plt.scatter(y_true, y_pred, alpha=0.7)
+    plt.plot([min(y_true), max(y_true)], [min(y_true), max(y_true)], 'r--')
+    plt.xlabel('Actual Fatigue')
+    plt.ylabel('Predicted Fatigue')
+    plt.title(f'{model_name}: Actual vs Predicted Fatigue')
+    plt.grid(True)
+    plt.savefig(subjectName+f"{model_name.lower().replace(' ', '_')}_results.png")
+    plt.close()
     
     return mse, r2
 
@@ -214,10 +230,10 @@ def train_linear_model():
         # Make predictions
         y_pred = model.predict(X_test_scaled)
         y_all_pred = model.predict(X)
-        plt.figure()
-        plt.plot(y, label='Actual')
-        plt.plot(y_all_pred, label='Predicted')
-        plt.legend()
+        # plt.figure()
+        # plt.plot(y, label='Actual')
+        # plt.plot(y_all_pred, label='Predicted')
+        # plt.legend()
         
         # Evaluate
         mse, r2 = evaluate_model(y_test, y_pred, f"{name} Regression")
@@ -228,20 +244,20 @@ def train_linear_model():
             best_model = model
             best_name = name
             
-    plt.show()
-    plt.close()
+    # plt.show()
+    # plt.close()
     
     # For the best linear model, analyze coefficients
     if isinstance(best_model, (LinearRegression, Ridge, Lasso)):
         coefs = best_model.coef_
         indices = np.argsort(np.abs(coefs))[::-1]
         
-        # plt.figure(figsize=(10, 6))
-        # plt.bar(range(X_train.shape[1]), coefs[indices])
-        # plt.title(f'{best_name} Regression: Feature Coefficients')
-        # plt.xticks(range(X_train.shape[1]), [f'Feature {i}' for i in indices])
-        # plt.savefig(subjectName+f"{best_name.lower().replace(' ', '_')}_coefficients.png")
-        # plt.close()
+        plt.figure(figsize=(10, 6))
+        plt.bar(range(X_train.shape[1]), coefs[indices])
+        plt.title(f'{best_name} Regression: Feature Coefficients')
+        plt.xticks(range(X_train.shape[1]), [f'Feature {i}' for i in indices])
+        plt.savefig(subjectName+f"{best_name.lower().replace(' ', '_')}_coefficients.png")
+        plt.close()
     
     return best_model, best_name
 
@@ -324,12 +340,12 @@ def train_random_forest_model():
     feature_importance = rf_model.feature_importances_
     indices = np.argsort(feature_importance)[::-1]
     
-    # plt.figure(figsize=(10, 6))
-    # plt.bar(range(X_train.shape[1]), feature_importance[indices])
-    # plt.title('Random Forest Feature Importance')
-    # plt.xticks(range(X_train.shape[1]), [f'Feature {i}' for i in indices])
-    # plt.savefig(subjectName+"rf_feature_importance.png")
-    # plt.close()
+    plt.figure(figsize=(10, 6))
+    plt.bar(range(X_train.shape[1]), feature_importance[indices])
+    plt.title('Random Forest Feature Importance')
+    plt.xticks(range(X_train.shape[1]), [f'Feature {i}' for i in indices])
+    plt.savefig(subjectName+"rf_feature_importance.png")
+    plt.close()
     
     return rf_model
 
@@ -376,15 +392,15 @@ def train_lstm_model():
     )
     
     # Plot training history
-    # plt.figure(figsize=(10, 6))
-    # plt.plot(history.history['loss'], label='Training Loss')
-    # plt.plot(history.history['val_loss'], label='Validation Loss')
-    # plt.title('LSTM Model Loss')
-    # plt.xlabel('Epoch')
-    # plt.ylabel('Loss')
-    # plt.legend()
-    # plt.savefig(subjectName+"lstm_training_history.png")
-    # plt.close()
+    plt.figure(figsize=(10, 6))
+    plt.plot(history.history['loss'], label='Training Loss')
+    plt.plot(history.history['val_loss'], label='Validation Loss')
+    plt.title('LSTM Model Loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.savefig(subjectName+"lstm_training_history.png")
+    plt.close()
     
     # Make predictions
     y_pred = model.predict(X_test_lstm).flatten()
@@ -436,12 +452,12 @@ def train_gbm_model():
     feature_importance = gbm_model.feature_importances_
     indices = np.argsort(feature_importance)[::-1]
     
-    # plt.figure(figsize=(10, 6))
-    # plt.bar(range(X_train.shape[1]), feature_importance[indices])
-    # plt.title('GBM Feature Importance')
-    # plt.xticks(range(X_train.shape[1]), [f'Feature {i}' for i in indices])
-    # plt.savefig(subjectName+"gbm_feature_importance.png")
-    # plt.close()
+    plt.figure(figsize=(10, 6))
+    plt.bar(range(X_train.shape[1]), feature_importance[indices])
+    plt.title('GBM Feature Importance')
+    plt.xticks(range(X_train.shape[1]), [f'Feature {i}' for i in indices])
+    plt.savefig(subjectName+"gbm_feature_importance.png")
+    plt.close()
     
     return gbm_model
 
@@ -489,15 +505,15 @@ def train_cnn_model():
     )
     
     # Plot training history
-    # plt.figure(figsize=(10, 6))
-    # plt.plot(history.history['loss'], label='Training Loss')
-    # plt.plot(history.history['val_loss'], label='Validation Loss')
-    # plt.title('CNN Model Loss')
-    # plt.xlabel('Epoch')
-    # plt.ylabel('Loss')
-    # plt.legend()
-    # plt.savefig(subjectName+"cnn_training_history.png")
-    # plt.close()
+    plt.figure(figsize=(10, 6))
+    plt.plot(history.history['loss'], label='Training Loss')
+    plt.plot(history.history['val_loss'], label='Validation Loss')
+    plt.title('CNN Model Loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.savefig(subjectName+"cnn_training_history.png")
+    plt.close()
     
     # Make predictions
     y_pred = model.predict(X_test_cnn).flatten()
@@ -558,14 +574,14 @@ def train_knn_model():
         mse = mean_squared_error(y_test, y_pred)
         mse_values.append(mse)
     
-    # plt.figure(figsize=(10, 6))
-    # plt.plot(k_range, mse_values, marker='o')
-    # plt.title('KNN: MSE vs. k Value')
-    # plt.xlabel('k (Number of Neighbors)')
-    # plt.ylabel('Mean Squared Error')
-    # plt.grid(True)
-    # plt.savefig(subjectName+"knn_k_analysis.png")
-    # plt.close()
+    plt.figure(figsize=(10, 6))
+    plt.plot(k_range, mse_values, marker='o')
+    plt.title('KNN: MSE vs. k Value')
+    plt.xlabel('k (Number of Neighbors)')
+    plt.ylabel('Mean Squared Error')
+    plt.grid(True)
+    plt.savefig(subjectName+"knn_k_analysis.png")
+    plt.close()
     
     return knn_model
 
@@ -585,35 +601,35 @@ def compare_models(results):
     sorted_r2 = [r2_values[i] for i in sorted_indices]
     
     # Plot MSE comparison
-    # plt.figure(figsize=(15, 10))
-    # plt.subplot(2, 1, 1)
-    # bars = plt.bar(sorted_names, sorted_mse, color='salmon')
-    # plt.title('MSE Comparison (Lower is Better)', fontsize=14)
-    # plt.ylabel('Mean Squared Error')
-    # plt.xticks(rotation=45, ha='right')
+    plt.figure(figsize=(15, 10))
+    plt.subplot(2, 1, 1)
+    bars = plt.bar(sorted_names, sorted_mse, color='salmon')
+    plt.title('MSE Comparison (Lower is Better)', fontsize=14)
+    plt.ylabel('Mean Squared Error')
+    plt.xticks(rotation=45, ha='right')
     
     # Add values on top of bars
-    # for bar in bars:
-    #     height = bar.get_height()
-    #     plt.text(bar.get_x() + bar.get_width()/2., height + 0.001,
-    #              f'{height:.4f}', ha='center', va='bottom', fontsize=9)
+    for bar in bars:
+        height = bar.get_height()
+        plt.text(bar.get_x() + bar.get_width()/2., height + 0.001,
+                 f'{height:.4f}', ha='center', va='bottom', fontsize=9)
     
     # Plot R² comparison
-    # plt.subplot(2, 1, 2)
-    # bars = plt.bar(sorted_names, sorted_r2, color='skyblue')
-    # plt.title('R² Comparison (Higher is Better)', fontsize=14)
-    # plt.ylabel('R² Score')
-    # plt.xticks(rotation=45, ha='right')
+    plt.subplot(2, 1, 2)
+    bars = plt.bar(sorted_names, sorted_r2, color='skyblue')
+    plt.title('R² Comparison (Higher is Better)', fontsize=14)
+    plt.ylabel('R² Score')
+    plt.xticks(rotation=45, ha='right')
     
     # Add values on top of bars
-    # for bar in bars:
-    #     height = bar.get_height()
-    #     plt.text(bar.get_x() + bar.get_width()/2., height + 0.01,
-    #              f'{height:.4f}', ha='center', va='bottom', fontsize=9)
+    for bar in bars:
+        height = bar.get_height()
+        plt.text(bar.get_x() + bar.get_width()/2., height + 0.01,
+                 f'{height:.4f}', ha='center', va='bottom', fontsize=9)
     
-    # plt.tight_layout()
-    # plt.savefig(subjectName+"model_comparison.png", dpi=300)
-    # plt.close()
+    plt.tight_layout()
+    plt.savefig(subjectName+"model_comparison.png", dpi=300)
+    plt.close()
     
     # Print ranking
     print("\n===== Model Performance Ranking =====")
@@ -640,8 +656,8 @@ def save_models(models_dict, output_dir="saved_models"):
         models_dict: Dictionary with model names as keys and model objects as values
         output_dir: Directory to save the models
     """
-    # Create output directory if it doesn't exist
-    os.makedirs(output_dir, exist_ok=True)
+    # # Create output directory if it doesn't exist
+    # os.makedirs(output_dir, exist_ok=True)
     
     # Dictionary to track saved model paths
     model_paths = {}
@@ -675,7 +691,7 @@ if __name__ == "__main__":
     
     # Train all models
     linear_model, linear_name = train_linear_model()
-    # svr_model = train_svr_model()
+    svr_model = train_svr_model()
     rf_model = train_random_forest_model()
     lstm_model = train_lstm_model()
     gbm_model = train_gbm_model()
@@ -684,7 +700,7 @@ if __name__ == "__main__":
     
     models = {
         "linear": linear_model,
-        # "svr": svr_model,
+        "svr": svr_model,
         "random_forest": rf_model,
         "lstm": lstm_model,
         "gbm": gbm_model,
@@ -693,7 +709,7 @@ if __name__ == "__main__":
     }
 
     # Save all models at once
-    save_models(models, "C:\\Users\\John Stivaros\\Documents\\PersonalProjects\\MuscleInsight\\MuscleInsight\\R&D\\Playground\\machinelearning\\models\\")
+    save_models(models, modelsFolder)
     
     # Collect results for comparison
     results = {}
@@ -704,9 +720,9 @@ if __name__ == "__main__":
     results[linear_name] = {"mse": mse, "r2": r2}
     
     # SVR
-    # y_pred = svr_model.predict(X_test_scaled)
-    # mse, r2 = evaluate_model(y_test, y_pred, "SVR")
-    # results["SVR"] = {"mse": mse, "r2": r2}
+    y_pred = svr_model.predict(X_test_scaled)
+    mse, r2 = evaluate_model(y_test, y_pred, "SVR")
+    results["SVR"] = {"mse": mse, "r2": r2}
     
     # Random Forest
     y_pred = rf_model.predict(X_test_scaled)
