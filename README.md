@@ -43,12 +43,18 @@ Link to google docs: https://docs.google.com/document/d/1ecHfYun13XQoTQhuICtWPRK
 - [x] Develop fatigue metric regression
 - [x] Train
 - [x] Evaluation
+- [x] Develop fatigue metric regression
+- [x] Train
+- [x] Evaluation
       
 ## 5. Algorithm Implementation
 - [x] Develop calibration code
 - [x] Implement complete algorithm
+- [x] Develop calibration code
+- [x] Implement complete algorithm
 
 ## 6. Arduino BLE Communication
+- [x] Define BLE data transmission logic
 - [x] Define BLE data transmission logic
 
 
