@@ -1,4 +1,35 @@
 It is well known that the power spectrum of the sEMG shifts to a lower frequency during a sustained muscle contraction. The spectral parameters, such as the mean frequency (MNF) and the median frequency (MF), are the manifestation of localized muscle fatigue.
+Muscle Insight: Methods Analysis and Metrics of Value
+
+Introduction
+Understanding and quantifying muscle fatigue provides valuable insights for applications ranging from sports science to medical diagnostics. This document focuses on the analysis methods and metrics associated with muscle fatigue, as identified in recent research studies. By exploring metrics highlighted in the literature, we aim to establish a foundation for evaluating their relevance and applicability in understanding muscle fatigue.
+The document outlines key findings from the reviewed papers, discussing how these metrics may correlate with fatigue. Additionally, it provides an exploration of how these metrics can be leveraged for further research or practical applications in muscle insight analysis.
+
+Table of Contents
+Introduction	1
+Papers	2
+1.	Paper #1 (MNF, MDF, IMF, EEMD)	2
+Summary	2
+Metrics Discussed	4
+2.	Paper #2 (IMA_lo  -  IMA_hi)	5
+Summary	5
+Metrics Discussed	6
+3.	Paper #3 (Multifractal)	7
+Summary	7
+Metrics Discussed	10
+Notes	11
+4.	Paper #4 (Time, Freq, Non Linear, MNF/ARV)	20
+Summary	20
+Metrics Discussed	22
+5.	Paper #5 (EMD, IMF, MedianFreq)	23
+Summary	23
+Metrics Discussed	25
+Conclusions	27
+
+
+Papers
+ Paper #1 (MNF, MDF, IMF, EEMD)
+Summary
 
 The Progression of Muscle Fatigue During Exercise Estimation With the Aid of High-Frequency Component Parameters Derived From Ensemble Empirical Mode Decomposition
 A useful nonstationary and nonlinear signal processing technique, known as empirical mode decomposition (EMD), has been proposed. With an iterative decomposition of signals, EMD separates the full signal into ordered elements with frequencies ranging from high to low in each intrinsic mode function (IMF) level. Results showed that HHT-derived (Hilbert-Huang Transform) spectral and linear regression parameters were consistent and more reliable than those obtained with the short-time Fourier transform and the wavelet transform. 
@@ -83,6 +114,7 @@ The value of H ranges between 0 and 1:
 
 ***************To moving average mikrainei to len tou simatos*****************
 
+
 How to decide on θ?
 The value of θ typically lies in the range [0,1]. 
  θ=0 would position the window at the start of the current sample, giving a right-aligned (causal) moving average.
@@ -126,6 +158,10 @@ Each key represents a q-value, and the values are the calculated Hurst exponents
 h(q) decreases as q increases, a typical feature in multifractal time series.
 For q>0, smaller h(q) values indicate the series is less persistent in larger fluctuations.
 For q<0, higher h(q) suggests stronger contributions from smaller fluctuations (anti-persistent behavior).
+
+
+
+
 
 
 
@@ -233,3 +269,72 @@ General Comments until now:
 NEXT STEPS  -  To be studied and then implemented...
 
 
+
+
+ Paper #4 (Time, Freq, Non Linear, MNF/ARV)
+Summary
+Estimation of Muscle Fatigue by Ratio of Mean Frequency to Average Rectified Value from Surface Electromyography
+
+Τα PIαρακάτω είναι αPIό άρθρο PIου κάνει ρεφερενς το άρθρο του οPIοίου ο τίτλος αναφέρεται ακριβώς αPIό PIάνω.
+                                       
+                                       
+                                       
+                                       
+                                       
+Στο άρθρο στο οPIοίο έγινε η έρευνα, αναφέρονται τα εξής:
+
+                                       
+
+Metrics Discussed
+
+ RMS, IEMG, ARV, ZeroCrossing 
+ MPF, MNF, MDF, SMR, IMNF, IMFB
+ LZC, BandSpectralEntropy, WaveletEntropy
+ MNF/ARV
+
+
+ Paper #5 (EMD, IMF, MedianFreq)
+Summary
+An EMG Patch for the Real-Time Monitoring of Muscle-Fatigue Conditions During Exercise
+Η άσκηση PIου έγινε εδώ ήταν PIοδήλατο, κατατάσσεται και αυτό στις ισομετρικές ασκήσεις.
+ 
+
+ 
+ 
+
+
+
+
+
+Metrics Discussed 
+ IMF 1, 2, .. , n
+ EMD
+ Median Freq (MF)
+
+
+
+
+
+
+
+
+
+Conclusions
+
+We tried all the above metrics.
+Related for sure: 
+ Fatigue Index = IMA_lowComp  -  IMA_highComp
+ MNF/ARV
+ EMD (1[st]/2[nd] IMF)
+ Processed signal metrics
+ MFDMA ??
+
+
+Not Good:
+ Correlation Coefficient of MNF with ARV
+ DWT Discrete Wavelet Analysis 
+ EEMD ??
+ RMS, IEMG, ARV, ZeroCrossing 
+ MPF, MNF, MDF, SMR, IMNF, IMFB
+ LZC, BandSpectralEntropy, WaveletEntropy
+ 
